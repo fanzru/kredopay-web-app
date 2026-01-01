@@ -9,11 +9,13 @@ import {
   LogOut,
   Ghost,
   Send,
+  Fingerprint,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export type TabName =
   | "overview"
+  | "identity"
   | "intents"
   | "permissions"
   | "fog"
@@ -33,11 +35,18 @@ const menuItems = [
     description: "Permission overview & stats",
   },
   {
+    icon: Fingerprint,
+    label: "Identity",
+    id: "identity" as TabName,
+    description: "Accountless & ZK Proofs",
+  },
+  {
     icon: Send,
     label: "Spending Intents",
     id: "intents" as TabName,
     description: "Create & manage intents",
   },
+
   {
     icon: ShieldCheck,
     label: "Permissions",

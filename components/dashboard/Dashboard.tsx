@@ -11,6 +11,7 @@ import { Permissions } from "./pages/Permissions";
 import { LiquidityFog } from "./pages/LiquidityFog";
 import { ProofHistory } from "./pages/ProofHistory";
 import { ProtocolSettings } from "./pages/ProtocolSettings";
+import { Identity } from "./pages/Identity";
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabName>("overview");
@@ -19,6 +20,8 @@ export function Dashboard() {
     switch (activeTab) {
       case "overview":
         return <Overview />;
+      case "identity":
+        return <Identity />;
       case "intents":
         return <SpendingIntents />;
       case "permissions":

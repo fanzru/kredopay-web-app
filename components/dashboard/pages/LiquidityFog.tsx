@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Ghost, Info } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Ghost, Info, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 
 export function LiquidityFog() {
   return (
@@ -14,6 +14,14 @@ export function LiquidityFog() {
           <p className="text-zinc-500">
             Pooled centralized liquidity where ownership is obfuscated.
           </p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" size="sm">
+            <ArrowDownLeft className="mr-2 h-4 w-4" /> Withdraw
+          </Button>
+          <Button size="sm">
+            <ArrowUpRight className="mr-2 h-4 w-4" /> Deposit
+          </Button>
         </div>
       </div>
 

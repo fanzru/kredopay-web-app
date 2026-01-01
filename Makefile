@@ -152,3 +152,8 @@ info:
 	@echo "🔗 URLs:"
 	@echo "  Production: https://kredopay-web-app.pages.dev"
 	@echo ""
+
+cfd:
+	git add .
+	git commit -m "feat: for deploy"
+	git push
