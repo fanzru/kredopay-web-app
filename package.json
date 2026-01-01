@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "pages:build": "bunx @cloudflare/next-on-pages",
+    "pages:build": "bun run build && bunx @cloudflare/next-on-pages",
     "pages:deploy": "bun run pages:build && wrangler pages deploy .vercel/output/static",
     "pages:dev": "bunx @cloudflare/next-on-pages --experimental-minify"
   },

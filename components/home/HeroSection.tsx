@@ -6,32 +6,31 @@ import { ScrambleText } from "@/components/ui/ScrambleText";
 
 export function HeroSection() {
   return (
-    <section className="relative w-full min-h-screen bg-black text-white flex flex-col justify-center overflow-hidden font-sans">
+    <section className="relative w-full min-h-[100dvh] bg-black text-white flex flex-col justify-center overflow-hidden font-sans">
       {/* 3D Background - Loaded dynamically */}
       <Suspense fallback={<div className="absolute inset-0 bg-black" />}>
         <Hero3D />
       </Suspense>
 
-      <div className="relative z-10 max-w-[1440px] mx-auto w-full flex flex-col justify-center flex-grow px-6 md:px-12 pt-0 pb-0">
-        <div className="max-w-2xl transform translate-y-[-5%]">
+      <div className="relative z-10 max-w-[1440px] mx-auto w-full flex flex-col justify-center flex-grow px-6 md:px-12 py-20 md:py-24">
+        <div className="max-w-2xl">
           {/* Main Headline */}
           <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-[0.9] mb-8 font-sans">
             THE ALL-IN-ONE
             <br />
             APP IS
             <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
-              <ScrambleText
-                words={[
-                  "COMING SOON",
-                  "IN PROGRESS",
-                  "UNDER CONSTRUCTION",
-                  "BEING BUILT",
-                ]}
-                delay={500}
-                pauseDuration={3000}
-              />
-            </span>
+            <ScrambleText
+              words={[
+                "COMING SOON",
+                "IN PROGRESS",
+                "UNDER CONSTRUCTION",
+                "BEING BUILT",
+              ]}
+              delay={500}
+              pauseDuration={3000}
+              className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 pb-1"
+            />
           </h1>
 
           {/* Subheadline descriptions */}
@@ -48,11 +47,20 @@ export function HeroSection() {
           </div>
 
           <div className="flex flex-wrap items-center gap-6">
-            <Button href="https://pump.fun" size="lg" variant="primary">
-              $KREDO
+            <Button
+              href="https://pump.fun/"
+              size="sm"
+              variant="primary"
+              target="_blank"
+            >
+              BUY $KREDO
             </Button>
-            <Button href="/dashboard" size="lg" variant="outline">
-              Launch App
+            <Button
+              href="https://github.com/kredopay"
+              size="sm"
+              variant="outline"
+            >
+              Learn More
             </Button>
           </div>
         </div>

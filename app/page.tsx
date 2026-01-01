@@ -8,7 +8,10 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_SHOW_DAPP === "true") {
+    // Hardcoded to false by default - only redirect if explicitly set to "true"
+    const showDapp =
+      process.env.NEXT_PUBLIC_SHOW_DAPP === "true" ? true : false;
+    if (showDapp) {
       router.push("/login");
     }
   }, [router]);
