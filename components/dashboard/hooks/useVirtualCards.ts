@@ -248,9 +248,6 @@ export function useVirtualCards() {
       setCards((prev) =>
         prev.map((card) => (card.id === cardId ? updatedCard : card))
       );
-
-      // Return updated card for potential use
-      return updatedCard;
     } catch (err) {
       throw new Error(
         err instanceof Error ? err.message : "Failed to update card"
