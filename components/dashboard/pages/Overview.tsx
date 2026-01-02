@@ -4,13 +4,13 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
-  ArrowDownLeft,
   Scan,
   RefreshCw,
   Plus,
   Wallet,
   LogOut,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 // Hooks
@@ -121,26 +121,21 @@ export function Overview() {
         {/* LEFT COLUMN: Actions, Banner, Cards */}
         <div className="lg:col-span-2 space-y-6 sm:space-y-10">
           {/* Action Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             <CompactActionButton
               icon={ArrowUpRight}
               label="Send"
-              onClick={() => showToast("info", "Send feature coming soon!")}
+              onClick={() => router.push("/dashboard/send")}
             />
             <CompactActionButton
               icon={RefreshCw}
               label="Swap"
-              onClick={() => showToast("info", "Swap feature coming soon!")}
-            />
-            <CompactActionButton
-              icon={ArrowDownLeft}
-              label="Receive"
-              onClick={() => showToast("info", "Receive feature coming soon!")}
+              onClick={() => router.push("/dashboard/swap")}
             />
             <CompactActionButton
               icon={Scan}
               label="Pay"
-              onClick={() => showToast("info", "Pay feature coming soon!")}
+              onClick={() => router.push("/dashboard/pay")}
             />
           </div>
 
@@ -164,6 +159,25 @@ export function Overview() {
                 <span className="hidden sm:inline">New Card</span>
               </button>
             </div>
+
+            {/* Info Banner */}
+            {cards.length > 0 && (
+              <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 flex items-start gap-4 shadow-sm backdrop-blur-sm relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+                <div className="relative p-2 bg-blue-500/10 rounded-full shrink-0">
+                  <AlertCircle className="w-5 h-5 text-blue-400" />
+                </div>
+                <div className="relative space-y-1">
+                  <h4 className="text-sm font-semibold text-blue-100">
+                    Activation Pending
+                  </h4>
+                  <p className="text-sm text-zinc-400 leading-relaxed max-w-md">
+                    This card remains inactive until you top up and submit your
+                    card number.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {cards.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/30 p-8 sm:p-16 text-center">
@@ -218,7 +232,9 @@ export function Overview() {
       <CreateCardModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onCreateCard={createCard}
+        onCreateCard={async (name: string, limit?: number) => {
+          await createCard(name, limit);
+        }}
       />
     </div>
   );

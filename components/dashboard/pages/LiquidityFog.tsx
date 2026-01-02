@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
-import { Ghost, Droplets, Users, Zap, Loader2, LogOut } from "lucide-react";
+import { Ghost, Droplets, Users, Zap, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { toast } from "sonner";
 import { useLiquidityFogAuth } from "../hooks/useLiquidityFogAuth";
 
 export function LiquidityFog() {
@@ -13,36 +14,12 @@ export function LiquidityFog() {
   const { poolData, isLoading, error, isAuthenticated, deposit, withdraw } =
     useLiquidityFogAuth();
 
-  const [isDepositing, setIsDepositing] = useState(false);
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
-
-  const handleDeposit = async () => {
-    try {
-      setIsDepositing(true);
-      // In real implementation, this would open a modal for amount input
-      await deposit(100);
-      showToast("success", "Deposit successful!");
-    } catch (err) {
-      showToast("error", err instanceof Error ? err.message : "Deposit failed");
-    } finally {
-      setIsDepositing(false);
-    }
+  const handleDeposit = () => {
+    toast.info("Coming soon! 🚀");
   };
 
-  const handleWithdraw = async () => {
-    try {
-      setIsWithdrawing(true);
-      // In real implementation, this would open a modal for amount input
-      await withdraw(50);
-      showToast("success", "Withdrawal successful!");
-    } catch (err) {
-      showToast(
-        "error",
-        err instanceof Error ? err.message : "Withdrawal failed"
-      );
-    } finally {
-      setIsWithdrawing(false);
-    }
+  const handleWithdraw = () => {
+    toast.info("Coming soon! 🚀");
   };
 
   if (!isAuthenticated) {
@@ -74,29 +51,12 @@ export function LiquidityFog() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDeposit}
-            disabled={isDepositing || isLoading}
-          >
-            {isDepositing ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Droplets className="mr-2 h-4 w-4" />
-            )}
+          <Button variant="outline" size="sm" onClick={handleDeposit}>
+            <Droplets className="mr-2 h-4 w-4" />
             Deposit
           </Button>
-          <Button
-            size="sm"
-            onClick={handleWithdraw}
-            disabled={isWithdrawing || isLoading}
-          >
-            {isWithdrawing ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Droplets className="mr-2 h-4 w-4" />
-            )}
+          <Button size="sm" onClick={handleWithdraw}>
+            <Droplets className="mr-2 h-4 w-4" />
             Withdraw
           </Button>
         </div>

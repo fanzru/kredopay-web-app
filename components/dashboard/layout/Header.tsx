@@ -15,8 +15,14 @@ export function Header() {
   const [showMenu, setShowMenu] = useState(false);
 
   const handleDisconnect = () => {
+    // Remove all auth-related data from localStorage
     StorageService.removeAuthToken();
+    localStorage.removeItem("kredo_auth_token");
+    localStorage.removeItem("kredo_user_email");
+    // Redirect to login
     router.push("/login");
+    // Force reload to clear any cached state
+    window.location.href = "/login";
   };
 
   // Show only first 2 menu items in dock, rest in hamburger
