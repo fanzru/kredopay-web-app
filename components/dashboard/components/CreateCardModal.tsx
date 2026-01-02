@@ -162,8 +162,28 @@ export function CreateCardModal({
                       <input
                         type="number"
                         value={spendingLimit}
-                        onChange={(e) => setSpendingLimit(e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (
+                            value === "" ||
+                            (!isNaN(parseFloat(value)) &&
+                              parseFloat(value) >= 0)
+                          ) {
+                            setSpendingLimit(value);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (
+                            e.key === "-" ||
+                            e.key === "e" ||
+                            e.key === "E" ||
+                            e.key === "+"
+                          ) {
+                            e.preventDefault();
+                          }
+                        }}
                         placeholder="1000"
+                        min="0"
                         className="w-full rounded-lg border border-zinc-800 bg-black/50 pl-8 pr-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-all focus:border-zinc-600 focus:bg-black focus:ring-1 focus:ring-zinc-600"
                         disabled={isCreating}
                       />
@@ -181,6 +201,27 @@ export function CreateCardModal({
                       <input
                         type="number"
                         placeholder="500"
+                        min="0"
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (
+                            value === "" ||
+                            (!isNaN(parseFloat(value)) &&
+                              parseFloat(value) >= 0)
+                          ) {
+                            // Handle per transaction limit if needed
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (
+                            e.key === "-" ||
+                            e.key === "e" ||
+                            e.key === "E" ||
+                            e.key === "+"
+                          ) {
+                            e.preventDefault();
+                          }
+                        }}
                         className="w-full rounded-lg border border-zinc-800 bg-black/50 pl-8 pr-3 py-2.5 text-sm text-white placeholder-zinc-500 outline-none transition-all focus:border-zinc-600 focus:bg-black focus:ring-1 focus:ring-zinc-600"
                         disabled={isCreating}
                       />

@@ -10,7 +10,13 @@ export function HeroSection() {
   return (
     <section className="relative w-full min-h-[100dvh] bg-black text-white flex flex-col justify-center overflow-hidden font-sans">
       {/* 3D Background - Loaded dynamically */}
-      <Suspense fallback={<div className="absolute inset-0 bg-black" />}>
+      <Suspense
+        fallback={
+          <div className="absolute inset-0 bg-black flex items-center justify-center">
+            <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+          </div>
+        }
+      >
         <Hero3D />
       </Suspense>
 

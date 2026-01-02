@@ -8,28 +8,6 @@ pages_build_output_dir = ".vercel/output/static"
 compatibility_date = "2024-12-31"
 compatibility_flags = ["nodejs_compat"]
 
-# D1 Database bindings for production
-[[env.production.d1_databases]]
-binding = "DB"
-database_name = "kredopay-db"
-database_id = "YOUR_PRODUCTION_DB_ID"
-
-[[env.production.d1_databases]]
-binding = "AUTH_DB"
-database_name = "kredopay-auth-db"
-database_id = "YOUR_PRODUCTION_AUTH_DB_ID"
-
 [env.preview]
 compatibility_date = "2024-12-31"
 compatibility_flags = ["nodejs_compat"]
-
-# D1 Database bindings for preview
-[[env.preview.d1_databases]]
-binding = "DB"
-database_name = "kredopay-db-preview"
-database_id = "YOUR_PREVIEW_DB_ID"
-
-[[env.preview.d1_databases]]
-binding = "AUTH_DB"
-database_name = "kredopay-auth-db-preview"
-database_id = "YOUR_PREVIEW_AUTH_DB_ID"

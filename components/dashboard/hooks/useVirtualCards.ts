@@ -89,7 +89,30 @@ export function useVirtualCards() {
 
         // Fetch cards from API
         const data = await apiCall("/api/cards");
-        setCards(data.cards || []);
+        // Convert field names from camelCase (database) to snake_case (interface)
+        // and convert balance from string (decimal) to number
+        const cards = (data.cards || []).map((card: any) => ({
+          id: card.id,
+          name: card.name,
+          card_number: card.cardNumber || card.card_number,
+          expiry_date: card.expiryDate || card.expiry_date,
+          cvv: card.cvv,
+          balance:
+            typeof card.balance === "string"
+              ? parseFloat(card.balance) || 0
+              : card.balance || 0,
+          currency: card.currency,
+          status: card.status,
+          created_at: card.createdAt || card.created_at,
+          last_used: card.lastUsed || card.last_used,
+          spending_limit:
+            card.spendingLimit || card.spending_limit
+              ? typeof (card.spendingLimit || card.spending_limit) === "string"
+                ? parseFloat(card.spendingLimit || card.spending_limit)
+                : card.spendingLimit || card.spending_limit
+              : undefined,
+        }));
+        setCards(cards);
 
         // TODO: Fetch transactions from API
         // For now, keep empty
@@ -124,8 +147,33 @@ export function useVirtualCards() {
         body: JSON.stringify({ name, spendingLimit }),
       });
 
-      setCards((prev) => [data.card, ...prev]);
-      return data.card;
+      // Convert field names from camelCase (database) to snake_case (interface)
+      // and convert balance from string (decimal) to number
+      const card = {
+        id: data.card.id,
+        name: data.card.name,
+        card_number: data.card.cardNumber || data.card.card_number,
+        expiry_date: data.card.expiryDate || data.card.expiry_date,
+        cvv: data.card.cvv,
+        balance:
+          typeof data.card.balance === "string"
+            ? parseFloat(data.card.balance) || 0
+            : data.card.balance || 0,
+        currency: data.card.currency,
+        status: data.card.status,
+        created_at: data.card.createdAt || data.card.created_at,
+        last_used: data.card.lastUsed || data.card.last_used,
+        spending_limit:
+          data.card.spendingLimit || data.card.spending_limit
+            ? typeof (data.card.spendingLimit || data.card.spending_limit) ===
+              "string"
+              ? parseFloat(data.card.spendingLimit || data.card.spending_limit)
+              : data.card.spendingLimit || data.card.spending_limit
+            : undefined,
+      };
+
+      setCards((prev) => [card, ...prev]);
+      return card;
     } catch (err) {
       throw new Error(
         err instanceof Error ? err.message : "Failed to create card"
@@ -144,8 +192,33 @@ export function useVirtualCards() {
         body: JSON.stringify(updates),
       });
 
+      // Convert field names from camelCase (database) to snake_case (interface)
+      // and convert balance from string (decimal) to number
+      const updatedCard = {
+        id: data.card.id,
+        name: data.card.name,
+        card_number: data.card.cardNumber || data.card.card_number,
+        expiry_date: data.card.expiryDate || data.card.expiry_date,
+        cvv: data.card.cvv,
+        balance:
+          typeof data.card.balance === "string"
+            ? parseFloat(data.card.balance) || 0
+            : data.card.balance || 0,
+        currency: data.card.currency,
+        status: data.card.status,
+        created_at: data.card.createdAt || data.card.created_at,
+        last_used: data.card.lastUsed || data.card.last_used,
+        spending_limit:
+          data.card.spendingLimit || data.card.spending_limit
+            ? typeof (data.card.spendingLimit || data.card.spending_limit) ===
+              "string"
+              ? parseFloat(data.card.spendingLimit || data.card.spending_limit)
+              : data.card.spendingLimit || data.card.spending_limit
+            : undefined,
+      };
+
       setCards((prev) =>
-        prev.map((card) => (card.id === cardId ? data.card : card))
+        prev.map((card) => (card.id === cardId ? updatedCard : card))
       );
     } catch (err) {
       throw new Error(
@@ -205,7 +278,14 @@ export function useVirtualCards() {
   };
 
   const getTotalBalance = () => {
-    return cards.reduce((sum, card) => sum + card.balance, 0);
+    return cards.reduce((sum, card) => {
+      // Convert balance to number (database returns decimal as string)
+      const balance =
+        typeof card.balance === "string"
+          ? parseFloat(card.balance) || 0
+          : card.balance || 0;
+      return sum + balance;
+    }, 0);
   };
 
   const getActiveCardsCount = () => {

@@ -95,20 +95,24 @@ export function VirtualCardItem({
     }
   };
 
+  // Handle both camelCase and snake_case field names, with fallback
+  const cardNumber =
+    card.card_number || (card as any).cardNumber || "0000 0000 0000 0000";
+  const expiryDate = (card as any).expiryDate || card.expiry_date || "MM/YY";
+  const cvv = card.cvv || "";
+
+  const maskedCardNumber = cardNumber
+    .split(" ")
+    .map((part: string, i: number) => (i < 3 ? "••••" : part))
+    .join(" ");
+
+  const cardNumberDisplay = showCardNumber ? cardNumber : maskedCardNumber;
+
   const copyCardNumber = () => {
-    navigator.clipboard.writeText(card.card_number.replace(/\s/g, ""));
+    navigator.clipboard.writeText(cardNumber.replace(/\s/g, ""));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const maskedCardNumber = card.card_number
-    .split(" ")
-    .map((part, i) => (i < 3 ? "••••" : part))
-    .join(" ");
-
-  const cardNumberDisplay = showCardNumber
-    ? card.card_number
-    : maskedCardNumber;
 
   return (
     <motion.div
@@ -293,7 +297,7 @@ export function VirtualCardItem({
                   Expires
                 </span>
                 <p className="text-white text-xs font-mono tracking-widest font-semibold">
-                  {card.expiry_date}
+                  {expiryDate}
                 </p>
               </div>
             </div>
@@ -307,7 +311,10 @@ export function VirtualCardItem({
               <div className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
                 <p className="text-white/80 text-[9px] font-bold tracking-tight">
                   $
-                  {card.balance.toLocaleString(undefined, {
+                  {(typeof card.balance === "number"
+                    ? card.balance
+                    : parseFloat(String(card.balance)) || 0
+                  ).toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                   })}
                 </p>

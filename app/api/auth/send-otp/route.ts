@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OTPDatabase } from "@/lib/db-otp";
 import { sendOTPEmail } from "@/lib/email";
+import { isSupabaseConfigured } from "@/lib/supabase";
+
+// Cloudflare Pages requires Edge Runtime
+export const runtime = "edge";
 
 /**
  * Generate a 6-digit OTP code
@@ -15,6 +19,17 @@ function generateOTP(): string {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      console.warn("Supabase not configured, using dev mode");
+      // In dev mode without database, just return success
+      return NextResponse.json({
+        success: true,
+        message: "OTP sent successfully (dev mode - no database)",
+        isDev: true,
+      });
+    }
+
     const body = await request.json();
     const { email } = body;
 
@@ -32,7 +47,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if this is the dev bypass email
-    // Support both DEV_EMAIL and NEXT_PUBLIC_DEV_EMAIL for flexibility
     const devEmail =
       process.env.DEV_EMAIL ||
       process.env.NEXT_PUBLIC_DEV_EMAIL ||
@@ -42,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     if (email.toLowerCase() === devEmail.toLowerCase()) {
       // For dev email, store the hardcoded OTP
-      OTPDatabase.createOTP(email, devOTP);
+      await OTPDatabase.createOTP(email, devOTP);
 
       return NextResponse.json({
         success: true,
@@ -55,7 +69,7 @@ export async function POST(request: NextRequest) {
     const otpCode = generateOTP();
 
     // Store OTP in database
-    OTPDatabase.createOTP(email, otpCode);
+    await OTPDatabase.createOTP(email, otpCode);
 
     // Send OTP via email
     const emailResult = await sendOTPEmail({ email, otpCode });
@@ -68,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Clean up old OTPs periodically
-    OTPDatabase.cleanupExpiredOTPs();
+    await OTPDatabase.cleanupExpiredOTPs();
 
     return NextResponse.json({
       success: true,
@@ -76,8 +90,33 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Send OTP error:", error);
+
+    // If database error, provide more helpful message
+    if (
+      error instanceof Error &&
+      (error.message.includes("Failed") || error.message.includes("relation"))
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Database connection failed. Please check Supabase configuration in .env.local",
+          details:
+            process.env.NODE_ENV === "development" ? error.message : undefined,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: "Internal server error",
+        details:
+          process.env.NODE_ENV === "development"
+            ? error instanceof Error
+              ? error.message
+              : String(error)
+            : undefined,
+      },
       { status: 500 }
     );
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float, Line, PerspectiveCamera, Stars } from "@react-three/drei";
 import * as THREE from "three";
@@ -136,11 +136,54 @@ function Scene() {
 }
 
 export default function Hero3D() {
+  const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if WebGL is available
+    try {
+      const canvas = document.createElement("canvas");
+      const gl =
+        canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+      if (!gl) {
+        setHasError(true);
+        setIsLoading(false);
+        return;
+      }
+    } catch (error) {
+      setHasError(true);
+      setIsLoading(false);
+    }
+  }, []);
+
+  if (hasError) {
+    // Fallback: just show gradient background if WebGL is not available
+    return (
+      <div className="absolute inset-0 w-full h-full pointer-events-none z-0 bg-gradient-to-br from-zinc-900 via-black to-zinc-900">
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none" />
+      </div>
+    );
+  }
+
   return (
     <div className="absolute inset-0 w-full h-full pointer-events-none z-0">
-      <Canvas dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>
+      <Canvas
+        dpr={[1, 2]}
+        gl={{ antialias: true, alpha: true }}
+        onCreated={() => setIsLoading(false)}
+        onError={() => {
+          setHasError(true);
+          setIsLoading(false);
+        }}
+      >
         <Scene />
       </Canvas>
+      {isLoading && (
+        <div className="absolute inset-0 bg-black flex items-center justify-center">
+          <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+        </div>
+      )}
       {/* Fade overlay to blend with left text content */}
       <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none" />

@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
-  ArrowDownLeft,
   Scan,
   RefreshCw,
   Plus,
@@ -121,26 +120,21 @@ export function Overview() {
         {/* LEFT COLUMN: Actions, Banner, Cards */}
         <div className="lg:col-span-2 space-y-6 sm:space-y-10">
           {/* Action Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             <CompactActionButton
               icon={ArrowUpRight}
               label="Send"
-              onClick={() => showToast("info", "Send feature coming soon!")}
+              onClick={() => router.push("/dashboard/send")}
             />
             <CompactActionButton
               icon={RefreshCw}
               label="Swap"
-              onClick={() => showToast("info", "Swap feature coming soon!")}
-            />
-            <CompactActionButton
-              icon={ArrowDownLeft}
-              label="Receive"
-              onClick={() => showToast("info", "Receive feature coming soon!")}
+              onClick={() => router.push("/dashboard/swap")}
             />
             <CompactActionButton
               icon={Scan}
               label="Pay"
-              onClick={() => showToast("info", "Pay feature coming soon!")}
+              onClick={() => router.push("/dashboard/pay")}
             />
           </div>
 
@@ -218,7 +212,9 @@ export function Overview() {
       <CreateCardModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onCreateCard={createCard}
+        onCreateCard={async (name: string, limit?: number) => {
+          await createCard(name, limit);
+        }}
       />
     </div>
   );

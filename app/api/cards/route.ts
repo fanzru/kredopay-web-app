@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "@/lib/db";
+import { supabase } from "@/lib/supabase";
+
+// Cloudflare Pages requires Edge Runtime
+export const runtime = "edge";
 
 // Helper to get user email from token
 function getUserEmailFromToken(request: NextRequest): string | null {
-  const token = request.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) return null;
-
-  // In production, decode JWT token
-  // For now, get from localStorage (passed in header)
   const email = request.headers.get("x-user-email");
   return email;
 }
@@ -43,17 +41,72 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const cards = db
-      .prepare(
-        `SELECT * FROM virtual_cards WHERE user_email = ? ORDER BY created_at DESC`
-      )
-      .all(userEmail);
+    // Edge Runtime: Always use Supabase client (postgres client not compatible)
+    // Since we're using export const runtime = "edge", we MUST use Supabase
+    try {
+      const { data: cards, error } = await supabase
+        .from("virtual_cards")
+        .select("*")
+        .eq("user_email", userEmail)
+        .order("created_at", { ascending: false })
+        .limit(100); // Limit results for performance
 
-    return NextResponse.json({ cards });
+      if (error) {
+        console.error("Supabase error:", error);
+        // Return empty array instead of error to prevent UI breaking
+        return NextResponse.json({ cards: [] });
+      }
+
+      // Map Supabase response to match Drizzle schema format
+      const formattedCards = (cards || []).map((card: any) => ({
+        id: card.id,
+        cardNumber: card.card_number,
+        expiryDate: card.expiry_date,
+        cvv: card.cvv,
+        balance: card.balance,
+        currency: card.currency,
+        status: card.status,
+        spendingLimit: card.spending_limit,
+        createdAt: card.created_at,
+        lastUsed: card.last_used,
+        userEmail: card.user_email,
+        name: card.name,
+      }));
+
+      return NextResponse.json({ cards: formattedCards });
+    } catch (err) {
+      console.error("Supabase query timeout or error:", err);
+      // Return empty array on timeout/error to prevent UI breaking
+      return NextResponse.json({ cards: [] });
+    }
   } catch (error) {
     console.error("Error fetching cards:", error);
+
+    // If database error, provide more helpful message
+    if (error instanceof Error && error.message.includes("Failed query")) {
+      return NextResponse.json(
+        {
+          error:
+            "Database connection failed. Please check DATABASE_URL in .env.local",
+          cards: [], // Return empty array as fallback
+          details:
+            process.env.NODE_ENV === "development" ? error.message : undefined,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Failed to fetch cards" },
+      {
+        error: "Failed to fetch cards",
+        cards: [], // Return empty array as fallback
+        details:
+          process.env.NODE_ENV === "development"
+            ? error instanceof Error
+              ? error.message
+              : String(error)
+            : undefined,
+      },
       { status: 500 }
     );
   }
@@ -77,6 +130,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Edge Runtime: Always use Supabase client (postgres client not compatible)
+    // Since we're using export const runtime = "edge", we MUST use Supabase
     const cardId = `card-${Date.now()}-${Math.random()
       .toString(36)
       .slice(2, 9)}`;
@@ -85,36 +140,88 @@ export async function POST(request: NextRequest) {
     const cvv = generateCVV();
     const createdAt = Date.now();
 
-    const stmt = db.prepare(`
-      INSERT INTO virtual_cards (
-        id, user_email, name, card_number, expiry_date, cvv,
-        balance, currency, status, spending_limit, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    try {
+      const { data: card, error } = await supabase
+        .from("virtual_cards")
+        .insert({
+          id: cardId,
+          user_email: userEmail,
+          name: name.trim(),
+          card_number: cardNumber,
+          expiry_date: expiryDate,
+          cvv: cvv,
+          balance: "0",
+          currency: "USDC",
+          status: "active",
+          spending_limit: spendingLimit ? spendingLimit.toString() : null,
+          created_at: createdAt,
+          last_used: null,
+        })
+        .select()
+        .single();
 
-    stmt.run(
-      cardId,
-      userEmail,
-      name.trim(),
-      cardNumber,
-      expiryDate,
-      cvv,
-      0,
-      "USDC",
-      "active",
-      spendingLimit || null,
-      createdAt
-    );
+      if (error) {
+        console.error("Supabase error:", error);
+        return NextResponse.json(
+          { error: "Failed to create card", details: error.message },
+          { status: 500 }
+        );
+      }
 
-    const card = db
-      .prepare("SELECT * FROM virtual_cards WHERE id = ?")
-      .get(cardId);
+      // Map Supabase response to match Drizzle schema format
+      const formattedCard = {
+        id: card.id,
+        cardNumber: card.card_number,
+        expiryDate: card.expiry_date,
+        cvv: card.cvv,
+        balance: card.balance,
+        currency: card.currency,
+        status: card.status,
+        spendingLimit: card.spending_limit,
+        createdAt: card.created_at,
+        lastUsed: card.last_used,
+        userEmail: card.user_email,
+        name: card.name,
+      };
 
-    return NextResponse.json({ card }, { status: 201 });
+      return NextResponse.json({ card: formattedCard }, { status: 201 });
+    } catch (err) {
+      console.error("Supabase insert timeout or error:", err);
+      return NextResponse.json(
+        {
+          error: "Failed to create card",
+          details:
+            err instanceof Error ? err.message : "Request timeout or error",
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error("Error creating card:", error);
+
+    // If database error, provide more helpful message
+    if (error instanceof Error && error.message.includes("Failed query")) {
+      return NextResponse.json(
+        {
+          error:
+            "Database connection failed. Please check DATABASE_URL in .env.local",
+          details:
+            process.env.NODE_ENV === "development" ? error.message : undefined,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Failed to create card" },
+      {
+        error: "Failed to create card",
+        details:
+          process.env.NODE_ENV === "development"
+            ? error instanceof Error
+              ? error.message
+              : String(error)
+            : undefined,
+      },
       { status: 500 }
     );
   }
