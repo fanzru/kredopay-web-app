@@ -3,6 +3,8 @@ import Link from "next/link";
 import Hero3D from "./Hero3D";
 import { Button } from "@/components/ui/Button";
 import { ScrambleText } from "@/components/ui/ScrambleText";
+import { MobileAppPreview } from "./MobileAppPreview";
+import { motion } from "framer-motion";
 
 export function HeroSection() {
   return (
@@ -12,10 +14,10 @@ export function HeroSection() {
         <Hero3D />
       </Suspense>
 
-      <div className="relative z-10 max-w-[1440px] mx-auto w-full flex flex-col justify-center flex-grow px-6 md:px-12 py-20 md:py-24">
+      <div className="relative z-10 max-w-[1440px] mx-auto w-full grid lg:grid-cols-2 gap-12 items-center flex-grow px-6 md:px-12 py-12 md:py-20">
         <div className="max-w-2xl">
           {/* Main Headline */}
-          <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-[0.9] mb-8 font-sans">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tighter leading-[0.9] mb-8 font-sans">
             THE ALL-IN-ONE
             <br />
             APP IS
@@ -41,14 +43,13 @@ export function HeroSection() {
             </p>
             <p className="text-lg text-gray-400 font-light leading-relaxed">
               Kredo App will eliminate accounts entirely. No wallets to secure,
-              no balances to expose. Just pure cryptographic permission for
-              Teams, AI Agents, and You.
+              no balances to expose. Just pure cryptographic permission.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-6">
             <Button
-              href="https://pump.fun/"
+              href="https://pump.fun/coin/F2hgieC18MeUWaWMoyaxLSQCzS7yAjRz1HgmbGAEpump"
               size="sm"
               variant="primary"
               target="_blank"
@@ -63,6 +64,17 @@ export function HeroSection() {
               Learn More
             </Button>
           </div>
+        </div>
+
+        {/* Mobile App Preview - Visible on all devices */}
+        <div className="flex justify-center perspective-1000 mt-16 lg:mt-0">
+          <motion.div
+            initial={{ rotateY: 15, rotateX: 5, opacity: 0, y: 50 }}
+            animate={{ rotateY: -5, rotateX: 0, opacity: 1, y: 0 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+          >
+            <MobileAppPreview />
+          </motion.div>
         </div>
       </div>
     </section>

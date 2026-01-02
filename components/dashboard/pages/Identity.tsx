@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Fingerprint,
   Shield,
@@ -10,13 +11,95 @@ import {
   CheckCircle2,
   RefreshCw,
   QrCode,
+  Laptop,
+  Smartphone,
+  Loader2,
+  LogOut,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { motion } from "framer-motion";
+import { useIdentityAuth } from "../hooks/useIdentityAuth";
 
 export function Identity() {
+  const router = useRouter();
+  const {
+    session,
+    proofStatuses,
+    devices,
+    isLoading,
+    error,
+    isAuthenticated,
+    rotateKeys,
+    generateNewProof,
+    revokeDevice,
+    getTimeUntilExpiry,
+  } = useIdentityAuth();
+
+  const [isRotating, setIsRotating] = useState(false);
+  const [isGeneratingProof, setIsGeneratingProof] = useState(false);
+
+  const handleRotateKeys = async () => {
+    try {
+      setIsRotating(true);
+      await rotateKeys();
+      alert("Keys rotated successfully!");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Key rotation failed");
+    } finally {
+      setIsRotating(false);
+    }
+  };
+
+  const handleGenerateProof = async () => {
+    try {
+      setIsGeneratingProof(true);
+      await generateNewProof("solvency");
+      alert("Proof generated successfully!");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Proof generation failed");
+    } finally {
+      setIsGeneratingProof(false);
+    }
+  };
+
+  const handleRevokeDevice = async (deviceId: string) => {
+    if (!confirm("Are you sure you want to revoke this device?")) return;
+
+    try {
+      await revokeDevice(deviceId);
+      alert("Device revoked successfully!");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Device revocation failed");
+    }
+  };
+
+  const handleLogout = () => {
+    if (!confirm("Are you sure you want to logout?")) return;
+
+    localStorage.removeItem("kredo_auth_token");
+    localStorage.removeItem("kredo_user_email");
+    router.push("/login");
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-8 pb-20">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-12 text-center">
+          <LogOut className="h-16 w-16 text-zinc-600 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">
+            Not Authenticated
+          </h2>
+          <p className="text-zinc-400 mb-6">
+            Please login to view your identity information.
+          </p>
+          <Button onClick={() => router.push("/login")}>Go to Login</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="max-w-5xl mx-auto space-y-8 pb-20">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
@@ -30,14 +113,39 @@ export function Identity() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" size="sm">
-            <RefreshCw className="mr-2 h-4 w-4" /> Rotate Keys
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRotateKeys}
+            disabled={isRotating || isLoading}
+          >
+            {isRotating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Rotate Keys
           </Button>
-          <Button size="sm">
-            <Fingerprint className="mr-2 h-4 w-4" /> New Proof
+          <Button
+            size="sm"
+            onClick={handleGenerateProof}
+            disabled={isGeneratingProof || isLoading}
+          >
+            {isGeneratingProof ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Fingerprint className="mr-2 h-4 w-4" />
+            )}
+            New Proof
           </Button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl bg-red-900/10 border border-red-900/20 p-4">
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
+      )}
 
       {/* Hero Status Card */}
       <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-black p-1">
@@ -62,16 +170,36 @@ export function Identity() {
                 Your actions are authorized via Zero-Knowledge Proofs related to
                 your real-world assets/identity, without revealing them.
               </p>
-              <div className="flex items-center justify-center md:justify-start gap-4 pt-2">
+              <div className="flex items-center justify-center md:justify-start gap-4 pt-2 flex-wrap">
+                {session?.email && (
+                  <div className="flex items-center gap-2 text-xs text-zinc-500 bg-zinc-900/50 px-3 py-1.5 rounded-full border border-zinc-800">
+                    <Mail className="h-3 w-3" />
+                    <span>{session.email}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-xs text-zinc-500 bg-zinc-900/50 px-3 py-1.5 rounded-full border border-zinc-800">
                   <Clock className="h-3 w-3" />
-                  <span>Session expires in 3h 45m</span>
+                  <span>
+                    Session expires in {getTimeUntilExpiry() || "..."}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-zinc-500 bg-zinc-900/50 px-3 py-1.5 rounded-full border border-zinc-800">
                   <Key className="h-3 w-3" />
-                  <span>Session ID: ax93...k2mq</span>
+                  <span>Session ID: {session?.sessionId || "..."}</span>
                 </div>
               </div>
+            </div>
+
+            <div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="text-red-400 border-red-900/30 hover:bg-red-900/10 hover:border-red-900/50"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </Button>
             </div>
           </div>
         </div>
@@ -88,40 +216,46 @@ export function Identity() {
           </div>
 
           <div className="space-y-4">
-            {[
-              { label: "Solvency Proof", status: "Verified", date: "Just now" },
-              {
-                label: "Clean Wallet (AML)",
-                status: "Verified",
-                date: "2h ago",
-              },
-              {
-                label: "Humanity Check",
-                status: "Pending Re-verify",
-                date: "12h ago",
-              },
-            ].map((proof, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/50"
-              >
-                <div>
-                  <p className="text-sm font-medium text-zinc-200">
-                    {proof.label}
-                  </p>
-                  <p className="text-xs text-zinc-500">{proof.date}</p>
-                </div>
-                <div
-                  className={`text-xs px-2 py-1 rounded-md border ${
-                    proof.status === "Verified"
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                      : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
-                  }`}
-                >
-                  {proof.status}
-                </div>
-              </div>
-            ))}
+            {isLoading
+              ? Array.from({ length: 3 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/50"
+                  >
+                    <div className="h-4 w-32 bg-zinc-800/50 rounded animate-pulse mb-2"></div>
+                    <div className="h-3 w-20 bg-zinc-800/50 rounded animate-pulse"></div>
+                  </div>
+                ))
+              : proofStatuses.map((proof, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/50"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-zinc-200">
+                        {proof.label}
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        {new Date(proof.lastVerified).toLocaleTimeString()}
+                      </p>
+                    </div>
+                    <div
+                      className={`text-xs px-2 py-1 rounded-md border ${
+                        proof.status === "verified"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          : proof.status === "pending"
+                          ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                          : "bg-red-500/10 text-red-400 border-red-500/20"
+                      }`}
+                    >
+                      {proof.status === "verified"
+                        ? "Verified"
+                        : proof.status === "pending"
+                        ? "Pending Re-verify"
+                        : "Expired"}
+                    </div>
+                  </div>
+                ))}
           </div>
         </div>
 
@@ -137,51 +271,77 @@ export function Identity() {
           </div>
 
           <div className="space-y-4">
-            <div className="flex items-center gap-4 p-3 rounded-lg bg-zinc-900/80 border border-zinc-700/50">
-              <div className="h-10 w-10 rounded-lg bg-black flex items-center justify-center border border-zinc-800">
-                <span className="text-lg">💻</span>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-white">
-                    MacBook Pro (Current)
-                  </p>
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                </div>
-                <p className="text-xs text-zinc-500">Jakarta, ID • Chrome</p>
-              </div>
-              <button
-                className="h-8 w-8 p-0 flex items-center justify-center rounded-lg hover:bg-zinc-800 transition-colors"
-                type="button"
-              >
-                <UserX className="h-4 w-4 text-zinc-500 hover:text-red-400" />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-4 p-3 rounded-lg bg-zinc-900/30 border border-zinc-800/30 opacity-60">
-              <div className="h-10 w-10 rounded-lg bg-black flex items-center justify-center border border-zinc-800">
-                <span className="text-lg">📱</span>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-zinc-300">
-                  iPhone 15 Pro
-                </p>
-                <p className="text-xs text-zinc-500">Singapore, SG • Safari</p>
-              </div>
-              <button
-                className="h-8 w-8 p-0 flex items-center justify-center rounded-lg hover:bg-zinc-800 transition-colors cursor-not-allowed opacity-50"
-                type="button"
-                disabled
-              >
-                <UserX className="h-4 w-4 text-zinc-600" />
-              </button>
-            </div>
+            {isLoading
+              ? Array.from({ length: 2 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-4 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/50"
+                  >
+                    <div className="h-10 w-10 rounded-lg bg-zinc-800/50 animate-pulse"></div>
+                    <div className="flex-1">
+                      <div className="h-4 w-32 bg-zinc-800/50 rounded animate-pulse mb-2"></div>
+                      <div className="h-3 w-24 bg-zinc-800/50 rounded animate-pulse"></div>
+                    </div>
+                  </div>
+                ))
+              : devices.map((device) => (
+                  <div
+                    key={device.id}
+                    className={`flex items-center gap-4 p-3 rounded-lg border ${
+                      device.isCurrent
+                        ? "bg-zinc-900/80 border-zinc-700/50"
+                        : "bg-zinc-900/30 border-zinc-800/30 opacity-60"
+                    }`}
+                  >
+                    <div className="h-10 w-10 rounded-lg bg-black flex items-center justify-center border border-zinc-800 text-zinc-400">
+                      {device.deviceType === "laptop" ? (
+                        <Laptop size={20} />
+                      ) : device.deviceType === "tablet" ? (
+                        <Laptop size={20} />
+                      ) : (
+                        <Smartphone size={20} />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p
+                          className={`text-sm font-medium ${
+                            device.isCurrent ? "text-white" : "text-zinc-300"
+                          }`}
+                        >
+                          {device.deviceName} {device.isCurrent && "(Current)"}
+                        </p>
+                        {device.isCurrent && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                        )}
+                      </div>
+                      <p className="text-xs text-zinc-500">
+                        {device.location} • {device.browser}
+                      </p>
+                    </div>
+                    <button
+                      className="h-8 w-8 p-0 flex items-center justify-center rounded-lg hover:bg-zinc-800 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                      type="button"
+                      onClick={() => handleRevokeDevice(device.id)}
+                      disabled={device.isCurrent}
+                    >
+                      <UserX
+                        className={`h-4 w-4 ${
+                          device.isCurrent
+                            ? "text-zinc-600"
+                            : "text-zinc-500 hover:text-red-400"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                ))}
           </div>
 
           <div className="mt-6 pt-4 border-t border-zinc-800">
             <Button
               variant="outline"
               className="w-full border-dashed border-zinc-700 hover:border-zinc-600 text-zinc-400 hover:text-white"
+              onClick={() => alert("Connect new device feature coming soon!")}
             >
               <PlusIcon className="mr-2 h-4 w-4" /> Connect New Device
             </Button>

@@ -3,7 +3,7 @@ import Link from "next/link";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   href?: string;
-  variant?: "primary" | "outline";
+  variant?: "primary" | "outline" | "ghost";
   size?: "sm" | "md" | "lg";
   children: React.ReactNode;
   className?: string; // Allow custom overrides
@@ -38,6 +38,8 @@ export function Button({
       "bg-gradient-to-r from-[#9251A5] to-[#E91E8C] hover:from-[#E91E8C] hover:to-[#9251A5] text-white",
     outline:
       "bg-black border border-gray-600 hover:border-white text-white hover:bg-white/5",
+    ghost:
+      "bg-transparent hover:bg-white/5 text-zinc-400 hover:text-white border border-transparent",
   };
 
   const combinedClassName = `${baseStyles} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`;
