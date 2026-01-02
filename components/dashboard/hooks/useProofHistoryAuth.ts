@@ -45,45 +45,15 @@ export function useProofHistoryAuth() {
         setIsLoading(true);
         setError(null);
 
-        // TODO: Replace with actual API call to Kredo backend
+        // TODO: Replace with actual API call to Kredo backend/database
         // This should fetch proof history associated with the user's session
         await new Promise((resolve) => setTimeout(resolve, 600));
 
-        // Simulated proof data - replace with actual API response
-        const mockProofs: Proof[] = [
-          {
-            id: `0x${Math.random().toString(16).slice(2, 10)}`,
-            type: "spending_authorization",
-            timestamp: new Date(Date.now() - 2 * 60 * 1000),
-            status: "verified",
-            txHash: `0x${Math.random().toString(16).slice(2, 66)}`,
-            blockExplorer: "https://solscan.io/tx/",
-          },
-          {
-            id: `0x${Math.random().toString(16).slice(2, 10)}`,
-            type: "identity_in_group",
-            timestamp: new Date(Date.now() - 15 * 60 * 1000),
-            status: "verified",
-            txHash: `0x${Math.random().toString(16).slice(2, 66)}`,
-            blockExplorer: "https://solscan.io/tx/",
-          },
-          {
-            id: `0x${Math.random().toString(16).slice(2, 10)}`,
-            type: "solvency",
-            timestamp: new Date(Date.now() - 45 * 60 * 1000),
-            status: "verified",
-            txHash: `0x${Math.random().toString(16).slice(2, 66)}`,
-            blockExplorer: "https://solscan.io/tx/",
-          },
-          {
-            id: `0x${Math.random().toString(16).slice(2, 10)}`,
-            type: "compliance",
-            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-            status: "pending",
-          },
-        ];
+        // Start with empty history to prevent "larping" with fake data
+        // Proofs will be added here as user interacts with the system
+        const userProofs: Proof[] = [];
 
-        setProofs(mockProofs);
+        setProofs(userProofs);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to fetch proof history"

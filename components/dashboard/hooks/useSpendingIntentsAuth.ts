@@ -50,58 +50,39 @@ export function useSpendingIntentsAuth() {
         setIsLoading(true);
         setError(null);
 
-        // TODO: Replace with actual API call to Kredo backend
-        await new Promise((resolve) => setTimeout(resolve, 700));
+        // Get auth token and email
+        const token = localStorage.getItem("kredo_auth_token");
+        const email = localStorage.getItem("kredo_user_email");
 
-        // Simulated spending intents
-        const mockIntents: SpendingIntent[] = [
-          {
-            id: `intent-${Date.now()}-1`,
-            type: "merchant_payment",
-            description: "Merchant Payment",
-            amount: 150,
-            currency: "USDC",
-            status: "pending_proof",
-            createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-            merchant: "Amazon",
-            category: "Shopping",
-          },
-          {
-            id: `intent-${Date.now()}-2`,
-            type: "saas_subscription",
-            description: "SaaS Subscription",
-            amount: 300,
-            currency: "USDC",
-            status: "authorized",
-            createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-            merchant: "Netflix",
-            category: "Entertainment",
-          },
-          {
-            id: `intent-${Date.now()}-3`,
-            type: "merchant_payment",
-            description: "Merchant Payment",
-            amount: 450,
-            currency: "USDC",
-            status: "authorized",
-            createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000),
-            merchant: "Shopify",
-            category: "Shopping",
-          },
-          {
-            id: `intent-${Date.now()}-4`,
-            type: "saas_subscription",
-            description: "SaaS Subscription",
-            amount: 600,
-            currency: "USDC",
-            status: "executed",
-            createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-            merchant: "GitHub",
-            category: "Development",
-          },
-        ];
+        if (!token || !email) {
+          setIntents([]);
+          setIsLoading(false);
+          return;
+        }
 
-        setIntents(mockIntents);
+        // Fetch real intents from API
+        const response = await fetch("/api/intents", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "x-user-email": email,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch intents");
+        }
+
+        const data = await response.json();
+
+        // Convert date strings back to Date objects
+        const intentsWithDates = data.intents.map((intent: any) => ({
+          ...intent,
+          createdAt: new Date(intent.createdAt),
+          updatedAt: intent.updatedAt ? new Date(intent.updatedAt) : null,
+          executedAt: intent.executedAt ? new Date(intent.executedAt) : null,
+        }));
+
+        setIntents(intentsWithDates);
       } catch (err) {
         setError(
           err instanceof Error
@@ -136,25 +117,45 @@ export function useSpendingIntentsAuth() {
     }
 
     try {
-      // TODO: Implement actual intent creation with ZK proof
-      console.log("Creating spending intent:", {
-        type,
-        amount,
-        description,
-        merchant,
+      const token = localStorage.getItem("kredo_auth_token");
+      const email = localStorage.getItem("kredo_user_email");
+
+      if (!token || !email) {
+        throw new Error("Not authenticated");
+      }
+
+      const response = await fetch("/api/intents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "x-user-email": email,
+        },
+        body: JSON.stringify({
+          type,
+          amount,
+          description,
+          merchant,
+        }),
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create intent");
+      }
 
+      const data = await response.json();
+
+      // Convert date strings back to Date objects
       const newIntent: SpendingIntent = {
-        id: `intent-${Date.now()}`,
-        type,
-        description,
-        amount,
-        currency: "USDC",
-        status: "pending_proof",
-        createdAt: new Date(),
-        merchant,
+        ...data.intent,
+        createdAt: new Date(data.intent.createdAt),
+        updatedAt: data.intent.updatedAt
+          ? new Date(data.intent.updatedAt)
+          : null,
+        executedAt: data.intent.executedAt
+          ? new Date(data.intent.executedAt)
+          : null,
       };
 
       setIntents((prev) => [newIntent, ...prev]);
@@ -172,9 +173,25 @@ export function useSpendingIntentsAuth() {
     }
 
     try {
-      // TODO: Implement intent cancellation
-      console.log("Cancelling intent:", intentId);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const token = localStorage.getItem("kredo_auth_token");
+      const email = localStorage.getItem("kredo_user_email");
+
+      if (!token || !email) {
+        throw new Error("Not authenticated");
+      }
+
+      const response = await fetch(`/api/intents/${intentId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-user-email": email,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to cancel intent");
+      }
 
       setIntents((prev) => prev.filter((intent) => intent.id !== intentId));
       return true;

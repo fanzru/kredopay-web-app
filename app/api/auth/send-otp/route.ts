@@ -32,8 +32,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if this is the dev bypass email
-    const devEmail = process.env.NEXT_PUBLIC_DEV_EMAIL || "dev@kredopay.app";
-    const devOTP = process.env.NEXT_PUBLIC_DEV_OTP || "000000";
+    // Support both DEV_EMAIL and NEXT_PUBLIC_DEV_EMAIL for flexibility
+    const devEmail =
+      process.env.DEV_EMAIL ||
+      process.env.NEXT_PUBLIC_DEV_EMAIL ||
+      "dev@kredopay.app";
+    const devOTP =
+      process.env.DEV_OTP || process.env.NEXT_PUBLIC_DEV_OTP || "000000";
 
     if (email.toLowerCase() === devEmail.toLowerCase()) {
       // For dev email, store the hardcoded OTP

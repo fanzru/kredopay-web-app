@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
+import type { D1Database } from "./db-adapter";
 
 // Use a global variable to store the database connection in development
 // to prevent creating multiple connections during hot-reloading
@@ -8,33 +9,8 @@ const globalForDb = globalThis as unknown as {
   db: Database.Database | undefined;
 };
 
-const dbPath = path.join(process.cwd(), "data", "kredo.db");
-
-// Ensure data directory exists
-const dataDir = path.join(process.cwd(), "data");
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
-
-let db: Database.Database;
-try {
-  db = globalForDb.db ?? new Database(dbPath);
-} catch (error) {
-  console.error("Failed to initialize database:", error);
-  throw new Error(
-    `Database initialization failed. Please ensure better-sqlite3 native bindings are installed. Run: npm rebuild better-sqlite3`
-  );
-}
-
-if (process.env.NODE_ENV !== "production") {
-  globalForDb.db = db;
-}
-
-// Enable WAL mode for better concurrency
-db.pragma("journal_mode = WAL");
-
-// Create tables
-db.exec(`
+// Database schema for both SQLite and D1
+export const SCHEMA = `
   CREATE TABLE IF NOT EXISTS virtual_cards (
     id TEXT PRIMARY KEY,
     user_email TEXT NOT NULL,
@@ -63,9 +39,80 @@ db.exec(`
     FOREIGN KEY (card_id) REFERENCES virtual_cards(id) ON DELETE CASCADE
   );
 
+  CREATE TABLE IF NOT EXISTS spending_intents (
+    id TEXT PRIMARY KEY,
+    user_email TEXT NOT NULL,
+    type TEXT NOT NULL,
+    description TEXT NOT NULL,
+    amount REAL NOT NULL,
+    currency TEXT DEFAULT 'USDC',
+    status TEXT DEFAULT 'pending_proof',
+    merchant TEXT,
+    category TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER,
+    proof_hash TEXT,
+    executed_at INTEGER
+  );
+
   CREATE INDEX IF NOT EXISTS idx_cards_user ON virtual_cards(user_email);
   CREATE INDEX IF NOT EXISTS idx_transactions_card ON transactions(card_id);
   CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_email);
-`);
+  CREATE INDEX IF NOT EXISTS idx_intents_user ON spending_intents(user_email);
+  CREATE INDEX IF NOT EXISTS idx_intents_status ON spending_intents(status);
+`;
 
+/**
+ * Initialize SQLite database for local development
+ */
+function initSQLite(): Database.Database {
+  const dbPath = path.join(process.cwd(), "data", "kredo.db");
+
+  // Ensure data directory exists
+  const dataDir = path.join(process.cwd(), "data");
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+
+  let db: Database.Database;
+  try {
+    db = globalForDb.db ?? new Database(dbPath);
+  } catch (error) {
+    console.error("Failed to initialize database:", error);
+    throw new Error(
+      `Database initialization failed. Please ensure better-sqlite3 native bindings are installed. Run: bun install`
+    );
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    globalForDb.db = db;
+  }
+
+  // Enable WAL mode for better concurrency
+  db.pragma("journal_mode = WAL");
+
+  // Create tables
+  db.exec(SCHEMA);
+
+  return db;
+}
+
+/**
+ * Get database instance
+ * Returns SQLite for local development, D1 for Cloudflare
+ */
+export function getDatabase(env?: {
+  DB?: D1Database;
+}): Database.Database | D1Database {
+  // If running on Cloudflare and D1 binding is available
+  if (env?.DB) {
+    return env.DB;
+  }
+
+  // Otherwise use SQLite for local development
+  return initSQLite();
+}
+
+// Export default SQLite instance for backward compatibility
+const db = initSQLite();
 export default db;

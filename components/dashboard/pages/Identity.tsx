@@ -18,6 +18,8 @@ import {
   Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
+import { StorageService } from "../services/storage";
 import { useIdentityAuth } from "../hooks/useIdentityAuth";
 
 export function Identity() {
@@ -38,13 +40,18 @@ export function Identity() {
   const [isRotating, setIsRotating] = useState(false);
   const [isGeneratingProof, setIsGeneratingProof] = useState(false);
 
+  const { showToast } = useToast();
+
   const handleRotateKeys = async () => {
     try {
       setIsRotating(true);
       await rotateKeys();
-      alert("Keys rotated successfully!");
+      showToast("success", "Keys rotated successfully!");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Key rotation failed");
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Key rotation failed"
+      );
     } finally {
       setIsRotating(false);
     }
@@ -54,31 +61,33 @@ export function Identity() {
     try {
       setIsGeneratingProof(true);
       await generateNewProof("solvency");
-      alert("Proof generated successfully!");
+      showToast("success", "Proof generated successfully!");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Proof generation failed");
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Proof generation failed"
+      );
     } finally {
       setIsGeneratingProof(false);
     }
   };
 
   const handleRevokeDevice = async (deviceId: string) => {
-    if (!confirm("Are you sure you want to revoke this device?")) return;
-
     try {
       await revokeDevice(deviceId);
-      alert("Device revoked successfully!");
+      showToast("success", "Device revoked successfully!");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Device revocation failed");
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Device revocation failed"
+      );
     }
   };
 
   const handleLogout = () => {
-    if (!confirm("Are you sure you want to logout?")) return;
-
-    localStorage.removeItem("kredo_auth_token");
-    localStorage.removeItem("kredo_user_email");
-    router.push("/login");
+    StorageService.removeAuthToken();
+    router.push("/login"); // Use router push to match import
+    showToast("success", "Logged out successfully");
   };
 
   if (!isAuthenticated) {

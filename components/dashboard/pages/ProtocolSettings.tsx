@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import {
   Settings,
   Save,
@@ -15,6 +16,7 @@ import { useProtocolSettingsAuth } from "../hooks/useProtocolSettingsAuth";
 
 export function ProtocolSettings() {
   const router = useRouter();
+  const { showToast } = useToast();
   const {
     settings,
     isLoading,
@@ -38,9 +40,12 @@ export function ProtocolSettings() {
   const handleSave = async () => {
     try {
       await saveSettings();
-      alert("Settings saved successfully!");
+      showToast("success", "Settings saved successfully!");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to save settings");
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Failed to save settings"
+      );
     }
   };
 

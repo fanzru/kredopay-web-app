@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import {
   Plus,
   Search,
@@ -30,6 +31,7 @@ export function SpendingIntents() {
     getRelativeTime,
   } = useSpendingIntentsAuth();
 
+  const { showToast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreateIntent = async () => {
@@ -42,22 +44,26 @@ export function SpendingIntents() {
         "Test Payment",
         "Test Merchant"
       );
-      alert("Intent created successfully!");
+      showToast("success", "Intent created successfully!");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create intent");
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Failed to create intent"
+      );
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleCancelIntent = async (intentId: string) => {
-    if (!confirm("Are you sure you want to cancel this intent?")) return;
-
     try {
       await cancelIntent(intentId);
-      alert("Intent cancelled successfully!");
+      showToast("success", "Intent cancelled successfully!");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to cancel intent");
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Failed to cancel intent"
+      );
     }
   };
 

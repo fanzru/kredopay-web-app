@@ -153,9 +153,6 @@ export function LoginPage() {
                     disabled={status === "loading"}
                     autoFocus
                   />
-                  {error && (
-                    <p className="mt-2 text-xs text-red-500">{error}</p>
-                  )}
                 </div>
 
                 <button
@@ -172,6 +169,16 @@ export function LoginPage() {
                     </>
                   )}
                 </button>
+
+                {error && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center text-xs text-red-500"
+                  >
+                    {error}
+                  </motion.p>
+                )}
               </motion.form>
             ) : (
               <motion.form
@@ -182,7 +189,7 @@ export function LoginPage() {
                 onSubmit={handleOtpSubmit}
                 className="space-y-4"
               >
-                <div className="relative">
+                <div>
                   <input
                     type="text"
                     required
@@ -203,11 +210,6 @@ export function LoginPage() {
                     disabled={status === "loading"}
                     autoFocus
                   />
-                  {error && (
-                    <p className="absolute -bottom-6 left-0 w-full text-center text-xs text-red-500">
-                      {error}
-                    </p>
-                  )}
                 </div>
 
                 <button
@@ -224,6 +226,16 @@ export function LoginPage() {
                     </>
                   )}
                 </button>
+
+                {error && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center text-xs text-red-500"
+                  >
+                    {error}
+                  </motion.p>
+                )}
 
                 <button
                   type="button"

@@ -53,15 +53,16 @@ export const metadata: Metadata = {
       "Banking without accounts. Spendability without ownership. The future of on-chain finance.",
     creator: "@kredopay",
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-  },
   robots: {
     index: true,
     follow: true,
   },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({

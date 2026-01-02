@@ -172,8 +172,6 @@ You can't hack what doesn't exist.
 
 Banking without accounts.
 The new standard.
-
-$KREDO 👁️
 ```
 
 ----
@@ -224,4 +222,46 @@ Coming next:
 
 Banking without accounts.
 The accountless era starts now.
+```
+
+----
+
+## Dashboard Launch GM
+
+```
+GM 👁️
+
+The new Kredo Dashboard.
+
+• Create Virtual Cards instantly
+• Set Daily & Transaction Limits
+• Define Time-Based Validations
+• Zero Accounts. Pure Authorization.
+
+We didn't optimize the bank account.
+We deleted it.
+
+$KREDO
+```
+
+----
+
+## Real Product Update
+
+```
+We don't sell roadmaps. We ship code.
+
+Kredo Dashboard Update 👁️
+
+✅ Virtual Cards with deep controls:
+   • Spending Limits (Daily vs Per Tx)
+   • Category Restrictions (e.g. "Travel Only")
+   • Time-Based Access (Valid From - To)
+   • Auto-Freeze Logic
+
+No mockups. No accounts. Just pure authorization.
+
+The OS for the accountless economy is ready.
+
+$KREDO
 ```

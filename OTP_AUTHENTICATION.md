@@ -104,12 +104,23 @@ The OTP database is automatically created at `data/auth.db` on first run.
 
 ## Development Bypass
 
-For development and testing, you can use the hardcoded credentials:
+For development and testing, you can use configurable dev credentials that bypass email sending.
 
+**Default credentials:**
 - **Email:** `dev@kredopay.app`
 - **OTP:** `000000`
 
+**Customize via environment variables:**
+
+```bash
+# Change these in your .env.local file
+NEXT_PUBLIC_DEV_EMAIL=your-email@example.com
+NEXT_PUBLIC_DEV_OTP=123456
+```
+
 This bypasses the email sending but still stores the OTP in the database for consistency.
+
+**📖 For detailed configuration guide, see [DEV_BYPASS.md](./DEV_BYPASS.md)**
 
 ## Database Schema
 

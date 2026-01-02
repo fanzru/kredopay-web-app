@@ -4,10 +4,12 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Ghost, Droplets, Users, Zap, Loader2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import { useLiquidityFogAuth } from "../hooks/useLiquidityFogAuth";
 
 export function LiquidityFog() {
   const router = useRouter();
+  const { showToast } = useToast();
   const { poolData, isLoading, error, isAuthenticated, deposit, withdraw } =
     useLiquidityFogAuth();
 
@@ -19,9 +21,9 @@ export function LiquidityFog() {
       setIsDepositing(true);
       // In real implementation, this would open a modal for amount input
       await deposit(100);
-      alert("Deposit successful!");
+      showToast("success", "Deposit successful!");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Deposit failed");
+      showToast("error", err instanceof Error ? err.message : "Deposit failed");
     } finally {
       setIsDepositing(false);
     }
@@ -32,9 +34,12 @@ export function LiquidityFog() {
       setIsWithdrawing(true);
       // In real implementation, this would open a modal for amount input
       await withdraw(50);
-      alert("Withdrawal successful!");
+      showToast("success", "Withdrawal successful!");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Withdrawal failed");
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Withdrawal failed"
+      );
     } finally {
       setIsWithdrawing(false);
     }
@@ -112,67 +117,39 @@ export function LiquidityFog() {
 
         <div className="relative z-10 flex flex-col items-center">
           <div className="h-20 w-20 rounded-full bg-zinc-800/50 flex items-center justify-center mb-6 border border-zinc-700 backdrop-blur-md">
-            <Ghost className="h-10 w-10 text-zinc-400" />
+            <Ghost className="h-10 w-10 text-zinc-500" />
           </div>
 
-          {isLoading ? (
-            <div className="space-y-4 w-full max-w-xs">
-              <div className="h-8 w-48 bg-zinc-800/50 rounded animate-pulse mx-auto"></div>
-              <div className="h-4 w-32 bg-zinc-800/50 rounded animate-pulse mx-auto"></div>
-            </div>
-          ) : (
-            <>
-              <h2 className="text-3xl font-bold text-white mb-2">
-                $ {poolData?.totalCapacity.toLocaleString()}.00
-              </h2>
-              <p className="text-zinc-500 text-sm mb-8">
-                Testnet Pool Capacity ({poolData?.currency})
-              </p>
-            </>
-          )}
+          <h2 className="text-3xl font-bold text-white mb-2">Alpha Access</h2>
+          <p className="text-zinc-500 text-sm mb-8 max-w-md mx-auto">
+            Public liquidity pools are currently gated for security audit.
+            Privacy features are active on Devnet only.
+          </p>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-4">
             <div className="rounded-xl bg-zinc-900/50 border border-zinc-800/50 p-4 backdrop-blur-sm">
               <div className="flex items-center gap-2 mb-2">
-                <Droplets className="h-4 w-4 text-blue-400" />
-                <p className="text-xs text-zinc-500 uppercase">Utilization</p>
+                <Droplets className="h-4 w-4 text-zinc-500" />
+                <p className="text-xs text-zinc-500 uppercase">Pool Status</p>
               </div>
-              {isLoading ? (
-                <div className="h-6 w-16 bg-zinc-800/50 rounded animate-pulse"></div>
-              ) : (
-                <p className="text-xl font-semibold text-white">
-                  {poolData?.utilizationRate}%
-                </p>
-              )}
+              <p className="text-lg font-semibold text-zinc-300">Gated</p>
             </div>
 
             <div className="rounded-xl bg-zinc-900/50 border border-zinc-800/50 p-4 backdrop-blur-sm">
               <div className="flex items-center gap-2 mb-2">
-                <Users className="h-4 w-4 text-purple-400" />
+                <Users className="h-4 w-4 text-zinc-500" />
                 <p className="text-xs text-zinc-500 uppercase">Anonymity Set</p>
               </div>
-              {isLoading ? (
-                <div className="h-6 w-16 bg-zinc-800/50 rounded animate-pulse"></div>
-              ) : (
-                <p className="text-xl font-semibold text-white">
-                  {poolData?.anonymitySetSize}
-                </p>
-              )}
+              <p className="text-lg font-semibold text-zinc-300">Devnet Only</p>
             </div>
 
             <div className="rounded-xl bg-zinc-900/50 border border-zinc-800/50 p-4 backdrop-blur-sm">
               <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-4 w-4 text-yellow-400" />
-                <p className="text-xs text-zinc-500 uppercase">ZK Throughput</p>
+                <Zap className="h-4 w-4 text-zinc-500" />
+                <p className="text-xs text-zinc-500 uppercase">ZK Prover</p>
               </div>
-              {isLoading ? (
-                <div className="h-6 w-16 bg-zinc-800/50 rounded animate-pulse"></div>
-              ) : (
-                <p className="text-xl font-semibold text-white">
-                  {poolData?.zkProofThroughput} TPS
-                </p>
-              )}
+              <p className="text-lg font-semibold text-zinc-300">Client-Side</p>
             </div>
           </div>
         </div>

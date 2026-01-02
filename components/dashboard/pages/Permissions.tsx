@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import {
   ShieldCheck,
   Plus,
@@ -17,6 +18,7 @@ import { usePermissionsAuth } from "../hooks/usePermissionsAuth";
 
 export function Permissions() {
   const router = useRouter();
+  const { showToast } = useToast();
   const {
     rolePolicies,
     globalConstraints,
@@ -34,8 +36,12 @@ export function Permissions() {
     try {
       setTogglingConstraint(constraintId);
       await toggleConstraint(constraintId);
+      showToast("success", "Constraint updated successfully");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to toggle constraint");
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Failed to toggle constraint"
+      );
     } finally {
       setTogglingConstraint(null);
     }
@@ -71,7 +77,9 @@ export function Permissions() {
         </div>
         <Button
           size="sm"
-          onClick={() => alert("Create new policy feature coming soon!")}
+          onClick={() =>
+            showToast("info", "Create new policy feature coming soon!")
+          }
         >
           <Plus className="mr-2 h-4 w-4" /> New Policy
         </Button>
