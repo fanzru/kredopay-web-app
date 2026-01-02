@@ -114,14 +114,14 @@ export function VirtualCardItem({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -8, scale: 1.02 }}
-      className={`relative group h-[320px] perspective-1000 ${
+      whileHover={{ y: -4, scale: 1.02 }}
+      className={`relative group w-full aspect-[1.586/1] perspective-1000 ${
         card.status === "frozen" ? "grayscale opacity-80" : ""
       }`}
     >
       {/* Physical Card Container */}
       <div
-        className={`relative w-full h-full rounded-[32px] overflow-hidden shadow-2xl transition-all duration-500
+        className={`relative w-full h-full rounded-2xl overflow-hidden shadow-2xl transition-all duration-500
           bg-zinc-900 border border-white/10
           ${card.status === "expired" ? "opacity-60" : ""}
         `}
@@ -145,27 +145,27 @@ export function VirtualCardItem({
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1500 ease-in-out" />
         </div>
 
-        <div className="relative z-10 w-full h-full p-8 flex flex-col justify-between">
+        <div className="relative z-10 w-full h-full p-5 flex flex-col justify-between">
           {/* Top Row: Brand & Actions */}
           <div className="flex justify-between items-start">
             <div className="flex flex-col gap-0.5">
-              <span className="text-white font-extrabold text-2xl tracking-tight font-sans">
+              <span className="text-white font-extrabold text-lg tracking-tight font-sans">
                 Kredo<span className="text-indigo-400">Pay</span>
               </span>
-              <span className="text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-bold">
+              <span className="text-[8px] text-zinc-500 uppercase tracking-[0.3em] font-bold">
                 Platinum Business
               </span>
             </div>
 
-            <div className="flex items-center gap-6">
-              <Wifi className="w-7 h-7 text-white/20 rotate-90" />
+            <div className="flex items-center gap-3">
+              <Wifi className="w-5 h-5 text-white/20 rotate-90" />
 
               <div className="relative">
                 <button
                   onClick={() => setShowMenu(!showMenu)}
-                  className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                  className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
                 >
-                  <MoreVertical className="h-6 w-6 text-white/40" />
+                  <MoreVertical className="h-5 w-5 text-white/40" />
                 </button>
 
                 {showMenu && (
@@ -217,11 +217,11 @@ export function VirtualCardItem({
           </div>
 
           {/* Middle: Chip & Card Number */}
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-3">
             {/* Holographic Chip */}
-            <div className="w-14 h-10 rounded-lg bg-gradient-to-br from-yellow-200 via-yellow-500 to-yellow-700 relative overflow-hidden border border-yellow-600/20 shadow-lg">
+            <div className="w-10 h-7 rounded-md bg-gradient-to-br from-yellow-200 via-yellow-500 to-yellow-700 relative overflow-hidden border border-yellow-600/20 shadow-lg">
               <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_45%,rgba(255,255,255,0.6)_50%,transparent_55%)] opacity-50" />
-              <div className="w-full h-full grid grid-cols-3 grid-rows-3 gap-[2px] opacity-30 mix-blend-multiply">
+              <div className="w-full h-full grid grid-cols-3 grid-rows-3 gap-[1px] opacity-30 mix-blend-multiply">
                 {[...Array(9)].map((_, i) => (
                   <div key={i} className="border-[0.5px] border-black/20" />
                 ))}
@@ -230,14 +230,14 @@ export function VirtualCardItem({
 
             {/* Card Number */}
             <div className="flex items-center justify-between group/number">
-              <p className="font-mono text-2xl md:text-3xl text-white tracking-[0.18em] drop-shadow-lg font-medium">
+              <p className="font-mono text-base md:text-lg text-white tracking-[0.15em] drop-shadow-lg font-medium">
                 {cardNumberDisplay}
               </p>
 
-              <div className="flex items-center gap-3 opacity-0 group-hover/number:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+              <div className="flex items-center gap-2 opacity-0 group-hover/number:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
                 <button
                   onClick={() => setShowCardNumber(!showCardNumber)}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/50 hover:text-white"
+                  className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-white/50 hover:text-white"
                 >
                   {showCardNumber ? (
                     <EyeOff className="w-5 h-5" />
@@ -250,9 +250,9 @@ export function VirtualCardItem({
                   className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/50 hover:text-white"
                 >
                   {copied ? (
-                    <Check className="w-5 h-5 text-emerald-400" />
+                    <Check className="w-4 h-4 text-emerald-400" />
                   ) : (
-                    <Copy className="w-5 h-5" />
+                    <Copy className="w-4 h-4" />
                   )}
                 </button>
               </div>
@@ -261,9 +261,9 @@ export function VirtualCardItem({
 
           {/* Bottom Row: Details & Logo */}
           <div className="flex items-end justify-between">
-            <div className="flex gap-8">
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold">
+            <div className="flex gap-4">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[8px] text-white/30 uppercase tracking-[0.2em] font-bold">
                   Card Holder
                 </span>
                 {isEditing ? (
@@ -279,33 +279,33 @@ export function VirtualCardItem({
                         setIsEditing(false);
                       }
                     }}
-                    className="bg-transparent border-b border-white/20 text-sm text-white focus:outline-none focus:border-white/50 font-semibold uppercase tracking-widest w-32"
+                    className="bg-transparent border-b border-white/20 text-xs text-white focus:outline-none focus:border-white/50 font-semibold uppercase tracking-widest w-24"
                     autoFocus
                   />
                 ) : (
-                  <p className="text-white text-sm font-semibold uppercase tracking-widest truncate max-w-[160px]">
+                  <p className="text-white text-xs font-semibold uppercase tracking-widest truncate max-w-[120px]">
                     {card.name}
                   </p>
                 )}
               </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[8px] text-white/30 uppercase tracking-[0.2em] font-bold">
                   Expires
                 </span>
-                <p className="text-white text-sm font-mono tracking-widest font-semibold">
+                <p className="text-white text-xs font-mono tracking-widest font-semibold">
                   {card.expiry_date}
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-col items-end gap-1.5">
               <img
                 src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg"
                 alt="Visa"
-                className="h-6 w-auto brightness-0 invert opacity-90"
+                className="h-4 w-auto brightness-0 invert opacity-90"
               />
-              <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-                <p className="text-white/80 text-[11px] font-bold tracking-tight">
+              <div className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                <p className="text-white/80 text-[9px] font-bold tracking-tight">
                   $
                   {card.balance.toLocaleString(undefined, {
                     minimumFractionDigits: 2,

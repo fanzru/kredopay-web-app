@@ -6,7 +6,7 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  make install      - Install dependencies with Bun"
-	@echo "  make dev          - Start development server"
+	@echo "  make dev          - Start development server (use PORT=3001 for custom port)"
 	@echo "  make build        - Build for production (Next.js)"
 	@echo "  make start        - Start production server"
 	@echo "  make lint         - Run ESLint"
@@ -30,9 +30,15 @@ install:
 	bun install
 
 # Development server
+# Usage: make dev [PORT=3001]
 dev:
 	@echo "🚀 Starting development server..."
-	bun run dev
+	@if [ -n "$(PORT)" ]; then \
+		echo "📡 Port: $(PORT)"; \
+		PORT=$(PORT) bun run dev; \
+	else \
+		bun run dev; \
+	fi
 
 # Build for production (standard Next.js)
 build:

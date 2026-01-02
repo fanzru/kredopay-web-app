@@ -13,54 +13,67 @@ export function LoginPage() {
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
-  const [error, setError] = useState(false);
+  const [error, setError] = useState("");
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
 
     setStatus("loading");
-    // Simulate API call to send OTP
-    setTimeout(() => {
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send OTP");
+      }
+
       setStatus("idle");
       setStep("otp");
-    }, 1000);
+    } catch (err) {
+      setStatus("idle");
+      setError(err instanceof Error ? err.message : "Failed to send OTP");
+    }
   };
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otp) return;
+    if (!otp || otp.length < 6) return;
 
     setStatus("loading");
-    setError(false);
+    setError("");
 
-    // Verify OTP logic
-    // Hardcoded dev check or general 000000 for demo
-    const isValidDev =
-      email.toLowerCase() === "dev@kredopay.app" && otp === "000000";
+    try {
+      const response = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
 
-    // For demo purposes, we can allow any OTP or just restrict to the dev one.
-    // Based on request "email yang hardcoded OTP", let's prioritize the Dev flow.
-    // We can also allow a generic "123456" for demo users if needed,
-    // but sticking to instructions:
+      const data = await response.json();
 
-    if (isValidDev) {
+      if (!response.ok) {
+        throw new Error(data.error || "Invalid OTP code");
+      }
+
+      // Store JWT token and user email
+      localStorage.setItem("kredo_auth_token", data.token);
+      localStorage.setItem("kredo_user_email", data.email || email);
+
+      setStatus("success");
       setTimeout(() => {
-        // Mock JWT Token
-        const mockJwt =
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.kredo_mock_signature";
-        localStorage.setItem("kredo_auth_token", mockJwt);
-
-        setStatus("success");
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 800);
-      }, 1000);
-    } else {
-      setTimeout(() => {
-        setStatus("idle");
-        setError(true);
-      }, 1000);
+        router.push("/dashboard");
+      }, 800);
+    } catch (err) {
+      setStatus("idle");
+      setError(err instanceof Error ? err.message : "Invalid OTP code");
     }
   };
 
@@ -127,12 +140,22 @@ export function LoginPage() {
                     type="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setError("");
+                    }}
                     placeholder="name@example.com"
-                    className="w-full rounded-xl border border-zinc-800 bg-black/50 px-4 py-3.5 text-sm text-white placeholder-zinc-500 outline-none transition-all focus:border-zinc-600 focus:bg-black focus:ring-1 focus:ring-zinc-600"
+                    className={`w-full rounded-xl border bg-black/50 px-4 py-3.5 text-sm text-white placeholder-zinc-500 outline-none transition-all focus:bg-black focus:ring-1 ${
+                      error
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : "border-zinc-800 focus:border-zinc-600 focus:ring-zinc-600"
+                    }`}
                     disabled={status === "loading"}
                     autoFocus
                   />
+                  {error && (
+                    <p className="mt-2 text-xs text-red-500">{error}</p>
+                  )}
                 </div>
 
                 <button
@@ -168,7 +191,7 @@ export function LoginPage() {
                       // Only allow numbers and max 6 chars
                       const val = e.target.value.replace(/\D/g, "").slice(0, 6);
                       setOtp(val);
-                      setError(false);
+                      setError("");
                     }}
                     placeholder="000 000"
                     maxLength={6}
@@ -182,7 +205,7 @@ export function LoginPage() {
                   />
                   {error && (
                     <p className="absolute -bottom-6 left-0 w-full text-center text-xs text-red-500">
-                      Invalid code. Try 000000.
+                      {error}
                     </p>
                   )}
                 </div>
@@ -207,7 +230,7 @@ export function LoginPage() {
                   onClick={() => {
                     setStep("email");
                     setOtp("");
-                    setError(false);
+                    setError("");
                   }}
                   className="w-full text-center text-xs text-zinc-500 hover:text-zinc-300 transition-colors mt-4"
                 >
