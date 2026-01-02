@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, isDatabaseConfigured } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
-import { virtualCards } from "@/lib/schema";
-import { eq, and } from "drizzle-orm";
 
 // Cloudflare Pages requires Edge Runtime
 export const runtime = "edge";
@@ -30,27 +27,21 @@ export async function PATCH(
 
     // Prepare updates
     const supabaseUpdates: any = {};
-    const drizzleUpdates: any = {};
 
     if (body.name !== undefined) {
       supabaseUpdates.name = body.name.trim();
-      drizzleUpdates.name = body.name.trim();
     }
     if (body.status !== undefined) {
       supabaseUpdates.status = body.status;
-      drizzleUpdates.status = body.status;
     }
     if (body.spendingLimit !== undefined) {
       supabaseUpdates.spending_limit = body.spendingLimit.toString();
-      drizzleUpdates.spendingLimit = body.spendingLimit.toString();
     }
     if (body.balance !== undefined) {
       supabaseUpdates.balance = body.balance.toString();
-      drizzleUpdates.balance = body.balance.toString();
     }
     if (body.lastUsed !== undefined) {
       supabaseUpdates.last_used = body.lastUsed;
-      drizzleUpdates.lastUsed = body.lastUsed;
     }
 
     if (Object.keys(supabaseUpdates).length === 0) {
@@ -60,78 +51,59 @@ export async function PATCH(
       );
     }
 
-    // In Edge Runtime, always use Supabase client
-    if (!db || !isDatabaseConfigured()) {
-      // Verify card belongs to user and update using Supabase
-      const { data: card, error: fetchError } = await supabase
-        .from("virtual_cards")
-        .select("*")
-        .eq("id", cardId)
-        .eq("user_email", userEmail)
-        .single();
+    // Edge Runtime: Always use Supabase client (postgres client not compatible)
+    // Since we're using export const runtime = "edge", we MUST use Supabase
+    // Verify card belongs to user and update using Supabase
+    const { data: card, error: fetchError } = await supabase
+      .from("virtual_cards")
+      .select("*")
+      .eq("id", cardId)
+      .eq("user_email", userEmail)
+      .single();
 
-      if (fetchError || !card) {
-        return NextResponse.json({ error: "Card not found" }, { status: 404 });
-      }
-
-      const { data: updatedCard, error: updateError } = await supabase
-        .from("virtual_cards")
-        .update(supabaseUpdates)
-        .eq("id", cardId)
-        .eq("user_email", userEmail)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error("Supabase error:", updateError);
-        return NextResponse.json(
-          { error: "Failed to update card", details: updateError.message },
-          { status: 500 }
-        );
-      }
-
-      // Map Supabase response to match Drizzle schema format
-      const formattedCard = {
-        id: updatedCard.id,
-        cardNumber: updatedCard.card_number,
-        expiryDate: updatedCard.expiry_date,
-        cvv: updatedCard.cvv,
-        balance: updatedCard.balance,
-        currency: updatedCard.currency,
-        status: updatedCard.status,
-        spendingLimit: updatedCard.spending_limit,
-        createdAt: updatedCard.created_at,
-        lastUsed: updatedCard.last_used,
-        userEmail: updatedCard.user_email,
-        name: updatedCard.name,
-      };
-
-      return NextResponse.json({ card: formattedCard });
-    }
-
-    // Use Drizzle ORM for Node.js runtime
-    // Verify card belongs to user
-    const [card] = await db
-      .select()
-      .from(virtualCards)
-      .where(
-        and(eq(virtualCards.id, cardId), eq(virtualCards.userEmail, userEmail))
-      )
-      .limit(1);
-
-    if (!card) {
+    if (fetchError || !card) {
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
     }
 
-    const [updatedCard] = await db
-      .update(virtualCards)
-      .set(drizzleUpdates)
-      .where(
-        and(eq(virtualCards.id, cardId), eq(virtualCards.userEmail, userEmail))
-      )
-      .returning();
+    const { data: updatedCard, error: updateError } = await supabase
+      .from("virtual_cards")
+      .update(supabaseUpdates)
+      .eq("id", cardId)
+      .eq("user_email", userEmail)
+      .select()
+      .single();
 
-    return NextResponse.json({ card: updatedCard });
+    if (updateError) {
+      console.error("Supabase error:", updateError);
+      return NextResponse.json(
+        { error: "Failed to update card", details: updateError.message },
+        { status: 500 }
+      );
+    }
+
+    // Map Supabase response to match Drizzle schema format
+    // Ensure status is lowercase and valid
+    const cardStatus = (updatedCard.status || "active").toLowerCase();
+    const validStatus = ["active", "frozen", "expired"].includes(cardStatus)
+      ? cardStatus
+      : "active";
+
+    const formattedCard = {
+      id: updatedCard.id,
+      cardNumber: updatedCard.card_number,
+      expiryDate: updatedCard.expiry_date,
+      cvv: updatedCard.cvv,
+      balance: updatedCard.balance,
+      currency: updatedCard.currency,
+      status: validStatus,
+      spendingLimit: updatedCard.spending_limit,
+      createdAt: updatedCard.created_at,
+      lastUsed: updatedCard.last_used,
+      userEmail: updatedCard.user_email,
+      name: updatedCard.name,
+    };
+
+    return NextResponse.json({ card: formattedCard });
   } catch (error) {
     console.error("Error updating card:", error);
 
@@ -176,45 +148,34 @@ export async function DELETE(
 
     const cardId = params.id;
 
-    // In Edge Runtime, always use Supabase client
-    if (!db || !isDatabaseConfigured()) {
-      // Verify card belongs to user
-      const { data: card, error: fetchError } = await supabase
-        .from("virtual_cards")
-        .select("*")
-        .eq("id", cardId)
-        .eq("user_email", userEmail)
-        .single();
+    // Edge Runtime: Always use Supabase client (postgres client not compatible)
+    // Since we're using export const runtime = "edge", we MUST use Supabase
+    // Verify card belongs to user
+    const { data: card, error: fetchError } = await supabase
+      .from("virtual_cards")
+      .select("*")
+      .eq("id", cardId)
+      .eq("user_email", userEmail)
+      .single();
 
-      if (fetchError || !card) {
-        return NextResponse.json({ error: "Card not found" }, { status: 404 });
-      }
-
-      // Delete card (transactions will be cascade deleted)
-      const { error: deleteError } = await supabase
-        .from("virtual_cards")
-        .delete()
-        .eq("id", cardId)
-        .eq("user_email", userEmail);
-
-      if (deleteError) {
-        console.error("Supabase error:", deleteError);
-        return NextResponse.json(
-          { error: "Failed to delete card", details: deleteError.message },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({ success: true });
+    if (fetchError || !card) {
+      return NextResponse.json({ error: "Card not found" }, { status: 404 });
     }
 
-    // Use Drizzle ORM for Node.js runtime
     // Delete card (transactions will be cascade deleted)
-    await db
-      .delete(virtualCards)
-      .where(
-        and(eq(virtualCards.id, cardId), eq(virtualCards.userEmail, userEmail))
+    const { error: deleteError } = await supabase
+      .from("virtual_cards")
+      .delete()
+      .eq("id", cardId)
+      .eq("user_email", userEmail);
+
+    if (deleteError) {
+      console.error("Supabase error:", deleteError);
+      return NextResponse.json(
+        { error: "Failed to delete card", details: deleteError.message },
+        { status: 500 }
       );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

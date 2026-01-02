@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { toast } from "sonner";
 import {
   Plus,
   Search,
@@ -34,25 +35,8 @@ export function SpendingIntents() {
   const { showToast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
 
-  const handleCreateIntent = async () => {
-    try {
-      setIsCreating(true);
-      // In real implementation, this would open a modal
-      await createIntent(
-        "merchant_payment",
-        100,
-        "Test Payment",
-        "Test Merchant"
-      );
-      showToast("success", "Intent created successfully!");
-    } catch (err) {
-      showToast(
-        "error",
-        err instanceof Error ? err.message : "Failed to create intent"
-      );
-    } finally {
-      setIsCreating(false);
-    }
+  const handleCreateIntent = () => {
+    toast.info("Coming soon! 🚀");
   };
 
   const handleCancelIntent = async (intentId: string) => {
@@ -137,16 +121,8 @@ export function SpendingIntents() {
             Active and pending authorization requests.
           </p>
         </div>
-        <Button
-          size="sm"
-          onClick={handleCreateIntent}
-          disabled={isCreating || isLoading}
-        >
-          {isCreating ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Plus className="mr-2 h-4 w-4" />
-          )}
+        <Button size="sm" onClick={handleCreateIntent}>
+          <Plus className="mr-2 h-4 w-4" />
           New Intent
         </Button>
       </div>

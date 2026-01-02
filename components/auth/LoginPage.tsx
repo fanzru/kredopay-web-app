@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, ShieldCheck, KeyRound } from "lucide-react";
@@ -14,6 +14,18 @@ export function LoginPage() {
   const [step, setStep] = useState<"email" | "otp">("email");
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
   const [error, setError] = useState("");
+  const [isChecking, setIsChecking] = useState(true);
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    const token = localStorage.getItem("kredo_auth_token");
+    if (token) {
+      // User is already logged in, redirect to dashboard
+      router.push("/dashboard");
+    } else {
+      setIsChecking(false);
+    }
+  }, [router]);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +88,18 @@ export function LoginPage() {
       setError(err instanceof Error ? err.message : "Invalid OTP code");
     }
   };
+
+  // Show loading while checking authentication
+  if (isChecking) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm font-sans text-white">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
+          <p className="text-sm text-zinc-500">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm font-sans text-white">

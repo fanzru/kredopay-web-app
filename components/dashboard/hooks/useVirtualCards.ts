@@ -187,9 +187,33 @@ export function useVirtualCards() {
     }
 
     try {
+      // Map field names from interface to API format
+      // API expects: name, status, spendingLimit, balance, lastUsed
+      const apiUpdates: any = {};
+      if (updates.name !== undefined) {
+        apiUpdates.name = updates.name;
+      }
+      if (updates.status !== undefined) {
+        apiUpdates.status = updates.status;
+      }
+      if (updates.spending_limit !== undefined) {
+        apiUpdates.spendingLimit = updates.spending_limit;
+      }
+      if (updates.balance !== undefined) {
+        apiUpdates.balance = updates.balance;
+      }
+      if (updates.last_used !== undefined) {
+        apiUpdates.lastUsed = updates.last_used;
+      }
+
+      // Ensure at least one field is being updated
+      if (Object.keys(apiUpdates).length === 0) {
+        throw new Error("No valid updates provided");
+      }
+
       const data = await apiCall(`/api/cards/${cardId}`, {
         method: "PATCH",
-        body: JSON.stringify(updates),
+        body: JSON.stringify(apiUpdates),
       });
 
       // Convert field names from camelCase (database) to snake_case (interface)
@@ -205,7 +229,10 @@ export function useVirtualCards() {
             ? parseFloat(data.card.balance) || 0
             : data.card.balance || 0,
         currency: data.card.currency,
-        status: data.card.status,
+        status: (data.card.status || "active") as
+          | "active"
+          | "frozen"
+          | "expired", // Ensure status is valid
         created_at: data.card.createdAt || data.card.created_at,
         last_used: data.card.lastUsed || data.card.last_used,
         spending_limit:
@@ -217,9 +244,13 @@ export function useVirtualCards() {
             : undefined,
       };
 
+      // Update cards state with the new card data
       setCards((prev) =>
         prev.map((card) => (card.id === cardId ? updatedCard : card))
       );
+
+      // Return updated card for potential use
+      return updatedCard;
     } catch (err) {
       throw new Error(
         err instanceof Error ? err.message : "Failed to update card"
@@ -247,11 +278,29 @@ export function useVirtualCards() {
   };
 
   const freezeCard = async (cardId: string) => {
-    await updateCard(cardId, { status: "frozen" });
+    if (!isAuthenticated) {
+      throw new Error("Not authenticated");
+    }
+    try {
+      await updateCard(cardId, { status: "frozen" });
+    } catch (err) {
+      throw new Error(
+        err instanceof Error ? err.message : "Failed to freeze card"
+      );
+    }
   };
 
   const unfreezeCard = async (cardId: string) => {
-    await updateCard(cardId, { status: "active" });
+    if (!isAuthenticated) {
+      throw new Error("Not authenticated");
+    }
+    try {
+      await updateCard(cardId, { status: "active" });
+    } catch (err) {
+      throw new Error(
+        err instanceof Error ? err.message : "Failed to unfreeze card"
+      );
+    }
   };
 
   const topUpCard = async (cardId: string, amount: number) => {

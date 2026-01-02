@@ -1,4 +1,4 @@
-.PHONY: help install dev build clean deploy preview pages-build pages-deploy pages-dev lint format test db-push db-generate db-studio db-migrate
+.PHONY: help install dev build clean deploy re-deploy preview pages-build pages-deploy pages-dev lint format test db-push db-generate db-studio db-migrate set-secret list-secrets delete-secret
 
 # Default target
 help:
@@ -23,6 +23,13 @@ help:
 	@echo "  make pages-deploy - Deploy to Cloudflare Pages"
 	@echo "  make pages-dev    - Preview Cloudflare Pages locally"
 	@echo "  make preview      - Build and preview locally"
+	@echo "  make deploy       - Quick deploy (build + deploy)"
+	@echo "  make re-deploy    - Clean build and re-deploy (fix missing secrets)"
+	@echo ""
+	@echo "Cloudflare Secrets:"
+	@echo "  make set-secret SECRET_NAME=NAME    - Set a secret (interactive)"
+	@echo "  make list-secrets                   - List all secrets"
+	@echo "  make delete-secret SECRET_NAME=NAME - Delete a secret"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean        - Clean build artifacts"
@@ -114,6 +121,45 @@ update:
 deploy: pages-build
 	@echo "🚀 Deploying to Cloudflare Pages..."
 	pnpm exec wrangler pages deploy .vercel/output/static --project-name=kredopay-web-app --commit-dirty=true
+
+# Re-deploy: Clean build and deploy (useful when secrets are missing)
+re-deploy: clean pages-build
+	@echo "🔄 Re-deploying to Cloudflare Pages..."
+	@echo "📦 Building fresh..."
+	@echo "🚀 Deploying..."
+	pnpm exec wrangler pages deploy .vercel/output/static --project-name=kredopay-web-app --commit-dirty=true
+	@echo "✅ Re-deploy complete!"
+	@echo ""
+	@echo "💡 If secrets are missing, set them with:"
+	@echo "   make set-secret SECRET_NAME=YOUR_SECRET_NAME"
+
+# Set Cloudflare Pages secret
+set-secret:
+	@if [ -z "$(SECRET_NAME)" ]; then \
+		echo "❌ Error: SECRET_NAME is required"; \
+		echo "Usage: make set-secret SECRET_NAME=YOUR_SECRET_NAME"; \
+		exit 1; \
+	fi
+	@echo "🔐 Setting secret: $(SECRET_NAME)"
+	@echo "📝 Enter the secret value (will be hidden):"
+	@pnpm exec wrangler pages secret put $(SECRET_NAME) --project-name=kredopay-web-app
+	@echo "✅ Secret $(SECRET_NAME) has been set!"
+
+# List Cloudflare Pages secrets
+list-secrets:
+	@echo "🔐 Listing Cloudflare Pages secrets..."
+	@pnpm exec wrangler pages secret list --project-name=kredopay-web-app || echo "⚠️  Could not list secrets. Make sure you're authenticated."
+
+# Delete Cloudflare Pages secret
+delete-secret:
+	@if [ -z "$(SECRET_NAME)" ]; then \
+		echo "❌ Error: SECRET_NAME is required"; \
+		echo "Usage: make delete-secret SECRET_NAME=YOUR_SECRET_NAME"; \
+		exit 1; \
+	fi
+	@echo "🗑️  Deleting secret: $(SECRET_NAME)"
+	@pnpm exec wrangler pages secret delete $(SECRET_NAME) --project-name=kredopay-web-app
+	@echo "✅ Secret $(SECRET_NAME) has been deleted!"
 
 # Development with clean start
 dev-clean: clean install dev

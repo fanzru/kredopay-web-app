@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   MoreVertical,
   Edit2,
@@ -40,12 +40,35 @@ export function VirtualCardItem({
   const [copied, setCopied] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Update editName when card.name changes (e.g., after rename)
+  useEffect(() => {
+    setEditName(card.name);
+  }, [card.name]);
+
+  // Debug: Log card status changes
+  useEffect(() => {
+    console.log(
+      "Card status:",
+      card.status,
+      "Lowercase:",
+      card.status?.toLowerCase()
+    );
+  }, [card.status]);
+
   const handleSaveEdit = async () => {
-    if (!editName.trim()) return;
+    if (!editName.trim()) {
+      showToast("error", "Card name cannot be empty");
+      return;
+    }
+
+    if (editName === card.name) {
+      setIsEditing(false);
+      return;
+    }
 
     try {
       setIsProcessing(true);
-      await onUpdate(card.id, { name: editName });
+      await onUpdate(card.id, { name: editName.trim() });
       setIsEditing(false);
       showToast("success", "Card renamed successfully");
     } catch (err) {
@@ -53,23 +76,33 @@ export function VirtualCardItem({
         "error",
         err instanceof Error ? err.message : "Failed to update card"
       );
+      // Revert to original name on error
+      setEditName(card.name);
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Delete card "${card.name}"?`)) return;
+    if (
+      !confirm(
+        `Are you sure you want to delete card "${card.name}"? This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
 
     try {
       setIsProcessing(true);
       await onDelete(card.id);
       showToast("success", "Card deleted successfully");
+      setShowMenu(false);
     } catch (err) {
       showToast(
         "error",
         err instanceof Error ? err.message : "Failed to delete card"
       );
+    } finally {
       setIsProcessing(false);
     }
   };
@@ -77,15 +110,18 @@ export function VirtualCardItem({
   const handleToggleFreeze = async () => {
     try {
       setIsProcessing(true);
-      if (card.status === "frozen") {
+      const currentStatus = card.status?.toLowerCase();
+
+      if (currentStatus === "frozen") {
         await onUnfreeze(card.id);
-        showToast("success", "Card unfrozen");
+        showToast("success", "Card unfrozen successfully");
       } else {
         await onFreeze(card.id);
-        showToast("success", "Card frozen");
+        showToast("success", "Card frozen successfully");
       }
       setShowMenu(false);
     } catch (err) {
+      console.error("Freeze/unfreeze error:", err);
       showToast(
         "error",
         err instanceof Error ? err.message : "Failed to update card status"
@@ -120,7 +156,7 @@ export function VirtualCardItem({
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4, scale: 1.02 }}
       className={`relative group w-full aspect-[1.586/1] perspective-1000 ${
-        card.status === "frozen" ? "grayscale opacity-80" : ""
+        card.status?.toLowerCase() === "frozen" ? "grayscale opacity-80" : ""
       }`}
     >
       {/* Physical Card Container */}
@@ -149,7 +185,7 @@ export function VirtualCardItem({
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1500 ease-in-out" />
         </div>
 
-        <div className="relative z-10 w-full h-full p-5 flex flex-col justify-between">
+        <div className="relative w-full h-full p-5 flex flex-col justify-between">
           {/* Top Row: Brand & Actions */}
           <div className="flex justify-between items-start">
             <div className="flex flex-col gap-0.5">
@@ -164,10 +200,11 @@ export function VirtualCardItem({
             <div className="flex items-center gap-3">
               <Wifi className="w-5 h-5 text-white/20 rotate-90" />
 
-              <div className="relative">
+              <div className="relative z-30">
                 <button
                   onClick={() => setShowMenu(!showMenu)}
-                  className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                  className="p-1.5 rounded-full hover:bg-white/10 transition-colors relative z-30"
+                  aria-label="Card options"
                 >
                   <MoreVertical className="h-5 w-5 text-white/40" />
                 </button>
@@ -178,22 +215,24 @@ export function VirtualCardItem({
                       className="fixed inset-0 z-10"
                       onClick={() => setShowMenu(false)}
                     />
-                    <div className="absolute right-0 top-10 z-20 w-44 rounded-2xl border border-zinc-800 bg-zinc-950/95 backdrop-blur-2xl shadow-2xl p-1.5">
+                    <div className="absolute right-0 top-10 z-30 w-44 rounded-2xl border border-zinc-800 bg-zinc-950/95 backdrop-blur-2xl shadow-2xl p-1.5">
                       <button
                         onClick={() => {
                           setIsEditing(true);
                           setShowMenu(false);
                         }}
-                        className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 rounded-xl transition-colors"
+                        disabled={isProcessing}
+                        className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Edit2 className="h-4 w-4" />
                         Rename Card
                       </button>
                       <button
                         onClick={handleToggleFreeze}
-                        className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 rounded-xl transition-colors"
+                        disabled={isProcessing}
+                        className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {card.status === "frozen" ? (
+                        {card.status?.toLowerCase() === "frozen" ? (
                           <>
                             <Sun className="h-4 w-4" />
                             Unfreeze Card
@@ -208,7 +247,8 @@ export function VirtualCardItem({
                       <div className="h-px bg-zinc-800 my-1 mx-1" />
                       <button
                         onClick={handleDelete}
-                        className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
+                        disabled={isProcessing}
+                        className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-red-400 hover:bg-red-500/10 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Trash2 className="h-4 w-4" />
                         Delete Card
@@ -277,13 +317,17 @@ export function VirtualCardItem({
                     onChange={(e) => setEditName(e.target.value)}
                     onBlur={handleSaveEdit}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") handleSaveEdit();
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleSaveEdit();
+                      }
                       if (e.key === "Escape") {
                         setEditName(card.name);
                         setIsEditing(false);
                       }
                     }}
-                    className="bg-transparent border-b border-white/20 text-xs text-white focus:outline-none focus:border-white/50 font-semibold uppercase tracking-widest w-24"
+                    disabled={isProcessing}
+                    className="bg-transparent border-b border-white/20 text-xs text-white focus:outline-none focus:border-white/50 font-semibold uppercase tracking-widest w-24 disabled:opacity-50"
                     autoFocus
                   />
                 ) : (
@@ -324,17 +368,28 @@ export function VirtualCardItem({
         </div>
 
         {/* Frozen Overlay */}
-        {card.status === "frozen" && (
+        {card.status?.toLowerCase() === "frozen" && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-[4px]">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="px-6 py-3 rounded-2xl bg-zinc-900/90 border border-white/10 text-white flex items-center gap-3 shadow-2xl"
+              className="flex flex-col items-center gap-3"
             >
-              <Snowflake className="w-5 h-5 text-blue-400" />
-              <span className="text-base font-bold tracking-wide uppercase">
-                Frozen
-              </span>
+              <div className="px-6 py-3 rounded-2xl bg-zinc-900/90 border border-white/10 text-white flex items-center gap-3 shadow-2xl">
+                <Snowflake className="w-5 h-5 text-blue-400" />
+                <span className="text-base font-bold tracking-wide uppercase">
+                  Frozen
+                </span>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleFreeze();
+                }}
+                className="text-xs text-white/70 hover:text-white hover:underline transition-colors"
+              >
+                Click to Unfreeze
+              </button>
             </motion.div>
           </div>
         )}
