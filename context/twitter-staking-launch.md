@@ -3,7 +3,7 @@
 ## Final Post (Ready to Tweet)
 
 ```
-📢 $KREDO Staking is Live
+$KREDO Staking is Live
 
 Turn your idle tokens into passive income:
 
@@ -14,9 +14,7 @@ Turn your idle tokens into passive income:
 
 Your card balance = Your staking power
 
-Note: Currently staking from card balance. Direct top-up launching next week.
-
-Start earning → [link]
+Currently staking from card balance. Direct top-up launching as sooon as possible, we will make sure release with best security protection.
 ```
 
 ---

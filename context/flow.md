@@ -22,7 +22,7 @@ architecture-beta
     group frontend(cloud)[Frontend Layer]
     
     service dashboard(server)[Dashboard] in frontend
-    <!-- service mobile(server)[Mobile App] in frontend -->
+    service mobile(server)[Mobile App] in frontend
     
     group backend(cloud)[Backend Layer]
     
