@@ -11,10 +11,12 @@ import {
   LogOut,
   Loader2,
   AlertCircle,
+  History,
 } from "lucide-react";
 
 // Hooks
 import { useVirtualCards } from "../hooks/useVirtualCards";
+import { useDeposits } from "../hooks/useDeposits";
 import { useToast } from "@/components/ui/Toast";
 import { Button } from "@/components/ui/Button";
 
@@ -25,6 +27,8 @@ import { StatusBanner } from "../components/StatusBanner";
 import { TransactionItem } from "../components/TransactionItem";
 import { CreateCardModal } from "../components/CreateCardModal";
 import { StakingPromoBanner } from "../components/StakingPromoBanner";
+import { TopUpModal } from "../components/TopUpModal";
+import { DepositRequestItem } from "../components/DepositRequestItem";
 
 export function Overview() {
   const router = useRouter();
@@ -43,10 +47,17 @@ export function Overview() {
     getTotalBalance,
   } = useVirtualCards();
 
+  const {
+    deposits,
+    isLoading: depositsLoading,
+    refreshDeposits,
+  } = useDeposits();
+
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
 
   const handleTopUp = () => {
-    showToast("info", "Top-up feature coming soon! 🚀");
+    setShowTopUpModal(true);
   };
 
   if (!isAuthenticated) {
@@ -91,19 +102,21 @@ export function Overview() {
             </p>
           </div>
           <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleTopUp}
-              className="relative flex-1 sm:flex-initial"
-            >
-              <Wallet className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Top Up</span>
-              <span className="sm:hidden">Top Up</span>
-              <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[10px] font-bold bg-yellow-500 text-black rounded-full">
-                SOON
+            <div className="relative flex-1 sm:flex-initial">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled
+                className="flex-1 sm:flex-initial w-full opacity-50 cursor-not-allowed"
+              >
+                <Wallet className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Top Up</span>
+                <span className="sm:hidden">Top Up</span>
+              </Button>
+              <span className="absolute -top-2 -right-2 bg-white text-black text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
+                Soon
               </span>
-            </Button>
+            </div>
             <Button
               size="sm"
               onClick={() => setShowCreateModal(true)}
@@ -144,6 +157,41 @@ export function Overview() {
 
           {/* Status Banner */}
           <StatusBanner />
+
+          {/* Deposit Requests */}
+          {deposits.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h3 className="text-lg sm:text-xl font-bold text-white">
+                  Deposit Requests
+                </h3>
+                <button
+                  onClick={refreshDeposits}
+                  className="text-sm font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1.5"
+                  disabled={depositsLoading}
+                >
+                  <History size={16} />
+                  <span className="hidden sm:inline">Refresh</span>
+                </button>
+              </div>
+              <div className="space-y-3">
+                {deposits.slice(0, 5).map((deposit) => (
+                  <DepositRequestItem
+                    key={deposit.id}
+                    deposit={deposit}
+                    onRefresh={refreshDeposits}
+                  />
+                ))}
+                {deposits.length > 5 && (
+                  <div className="text-center pt-2">
+                    <p className="text-xs text-zinc-500">
+                      Showing 5 of {deposits.length} deposits
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Virtual Cards */}
           <div>
@@ -235,6 +283,12 @@ export function Overview() {
         onCreateCard={async (name: string, limit?: number) => {
           await createCard(name, limit);
         }}
+      />
+
+      <TopUpModal
+        isOpen={showTopUpModal}
+        onClose={() => setShowTopUpModal(false)}
+        onDepositCreated={refreshDeposits}
       />
     </div>
   );

@@ -12,13 +12,13 @@ CREATE TABLE IF NOT EXISTS virtual_cards (
     spending_limit DECIMAL,
     created_at BIGINT NOT NULL,
     last_used BIGINT,
-    UNIQUE(user_email, card_number)
+    UNIQUE (user_email, card_number)
 );
 
 -- Transactions
 CREATE TABLE IF NOT EXISTS transactions (
     id TEXT PRIMARY KEY,
-    card_id TEXT NOT NULL REFERENCES virtual_cards(id) ON DELETE CASCADE,
+    card_id TEXT NOT NULL REFERENCES virtual_cards (id) ON DELETE CASCADE,
     user_email TEXT NOT NULL,
     type TEXT NOT NULL,
     amount DECIMAL NOT NULL,
@@ -54,14 +54,43 @@ CREATE TABLE IF NOT EXISTS otp_codes (
     used BOOLEAN DEFAULT false
 );
 
+-- Deposit Requests
+CREATE TABLE IF NOT EXISTS deposit_requests (
+    id TEXT PRIMARY KEY,
+    user_email TEXT NOT NULL,
+    requested_amount DECIMAL NOT NULL,
+    exact_amount DECIMAL NOT NULL,
+    currency TEXT DEFAULT 'USDC',
+    unique_code TEXT NOT NULL UNIQUE,
+    wallet_address TEXT,
+    status TEXT DEFAULT 'pending',
+    card_id TEXT REFERENCES virtual_cards (id) ON DELETE SET NULL,
+    created_at BIGINT NOT NULL,
+    expires_at BIGINT NOT NULL,
+    completed_at BIGINT,
+    transaction_hash TEXT
+);
+
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_cards_user ON virtual_cards(user_email);
-CREATE INDEX IF NOT EXISTS idx_transactions_card ON transactions(card_id);
-CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_email);
-CREATE INDEX IF NOT EXISTS idx_intents_user ON spending_intents(user_email);
-CREATE INDEX IF NOT EXISTS idx_intents_status ON spending_intents(status);
-CREATE INDEX IF NOT EXISTS idx_otp_email ON otp_codes(email);
-CREATE INDEX IF NOT EXISTS idx_otp_expires ON otp_codes(expires_at);
+CREATE INDEX IF NOT EXISTS idx_cards_user ON virtual_cards (user_email);
+
+CREATE INDEX IF NOT EXISTS idx_transactions_card ON transactions (card_id);
+
+CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions (user_email);
+
+CREATE INDEX IF NOT EXISTS idx_intents_user ON spending_intents (user_email);
+
+CREATE INDEX IF NOT EXISTS idx_intents_status ON spending_intents (status);
+
+CREATE INDEX IF NOT EXISTS idx_otp_email ON otp_codes (email);
+
+CREATE INDEX IF NOT EXISTS idx_otp_expires ON otp_codes (expires_at);
+
+CREATE INDEX IF NOT EXISTS idx_deposits_user ON deposit_requests (user_email);
+
+CREATE INDEX IF NOT EXISTS idx_deposits_code ON deposit_requests (unique_code);
+
+CREATE INDEX IF NOT EXISTS idx_deposits_status ON deposit_requests (status);
 
 -- Enable Row Level Security (RLS) if needed, but for now we'll assume service role or simple access
 -- ALTER TABLE virtual_cards ENABLE ROW LEVEL SECURITY;

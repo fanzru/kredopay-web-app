@@ -92,6 +92,33 @@ export const otpCodes = pgTable(
   })
 );
 
+// Deposit Requests Table
+export const depositRequests = pgTable(
+  "deposit_requests",
+  {
+    id: text("id").primaryKey(),
+    userEmail: text("user_email").notNull(),
+    requestedAmount: decimal("requested_amount").notNull(), // Amount user requested (e.g., 1000)
+    exactAmount: decimal("exact_amount").notNull(), // Exact amount with unique decimal (e.g., 1000.431)
+    currency: text("currency").default("USDC"),
+    uniqueCode: text("unique_code").notNull(),
+    walletAddress: text("wallet_address"),
+    status: text("status").default("pending"), // pending, completed, failed, expired
+    cardId: text("card_id").references(() => virtualCards.id, {
+      onDelete: "set null",
+    }),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+    expiresAt: bigint("expires_at", { mode: "number" }).notNull(),
+    completedAt: bigint("completed_at", { mode: "number" }),
+    transactionHash: text("transaction_hash"),
+  },
+  (table) => ({
+    userEmailIdx: index("idx_deposits_user").on(table.userEmail),
+    uniqueCodeIdx: index("idx_deposits_code").on(table.uniqueCode),
+    statusIdx: index("idx_deposits_status").on(table.status),
+  })
+);
+
 // Type exports for TypeScript
 export type VirtualCard = typeof virtualCards.$inferSelect;
 export type NewVirtualCard = typeof virtualCards.$inferInsert;
@@ -104,3 +131,6 @@ export type NewSpendingIntent = typeof spendingIntents.$inferInsert;
 
 export type OtpCode = typeof otpCodes.$inferSelect;
 export type NewOtpCode = typeof otpCodes.$inferInsert;
+
+export type DepositRequest = typeof depositRequests.$inferSelect;
+export type NewDepositRequest = typeof depositRequests.$inferInsert;

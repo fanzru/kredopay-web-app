@@ -27,7 +27,12 @@ export function CreateCardModal({
   const [validFrom, setValidFrom] = useState(
     new Date().toISOString().split("T")[0]
   );
-  const [validUntil, setValidUntil] = useState("");
+  const [validUntil, setValidUntil] = useState(() => {
+    const today = new Date();
+    const fiveYearsLater = new Date(today);
+    fiveYearsLater.setFullYear(today.getFullYear() + 5);
+    return fiveYearsLater.toISOString().split("T")[0];
+  });
 
   const toggleCategory = (category: string) => {
     setSelectedCategories((prev) =>
@@ -53,8 +58,11 @@ export function CreateCardModal({
       setSpendingLimit("");
       setCardType("Virtual");
       setSelectedCategories([]);
-      setValidFrom(new Date().toISOString().split("T")[0]);
-      setValidUntil("");
+      const today = new Date();
+      setValidFrom(today.toISOString().split("T")[0]);
+      const fiveYearsLater = new Date(today);
+      fiveYearsLater.setFullYear(today.getFullYear() + 5);
+      setValidUntil(fiveYearsLater.toISOString().split("T")[0]);
 
       showToast("success", "Card created successfully!");
       onClose();
@@ -243,7 +251,7 @@ export function CreateCardModal({
                         type="date"
                         value={validFrom}
                         onChange={(e) => setValidFrom(e.target.value)}
-                        className="w-full rounded-lg border border-zinc-800 bg-black/50 px-3 py-2.5 text-sm text-white outline-none transition-all focus:border-zinc-600 focus:bg-black focus:ring-1 focus:ring-zinc-600 [color-scheme:dark]"
+                        className=" rounded-lg border border-zinc-800 bg-black/50 px-3 py-2.5 text-sm text-white outline-none transition-all focus:border-zinc-600 focus:bg-black focus:ring-1 focus:ring-zinc-600 [color-scheme:dark]"
                         disabled={isCreating}
                       />
                     </div>
@@ -255,7 +263,7 @@ export function CreateCardModal({
                         type="date"
                         value={validUntil}
                         onChange={(e) => setValidUntil(e.target.value)}
-                        className="w-full rounded-lg border border-zinc-800 bg-black/50 px-3 py-2.5 text-sm text-white outline-none transition-all focus:border-zinc-600 focus:bg-black focus:ring-1 focus:ring-zinc-600 [color-scheme:dark]"
+                        className=" rounded-lg border border-zinc-800 bg-black/50 px-3 py-2.5 text-sm text-white outline-none transition-all focus:border-zinc-600 focus:bg-black focus:ring-1 focus:ring-zinc-600 [color-scheme:dark]"
                         disabled={isCreating}
                       />
                     </div>
