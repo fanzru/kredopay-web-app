@@ -92,6 +92,65 @@ CREATE INDEX IF NOT EXISTS idx_deposits_code ON deposit_requests (unique_code);
 
 CREATE INDEX IF NOT EXISTS idx_deposits_status ON deposit_requests (status);
 
+-- User Profiles (for wallet addresses)
+CREATE TABLE IF NOT EXISTS user_profiles (
+    user_email TEXT PRIMARY KEY,
+    wallet_address TEXT,
+    kredo_balance DECIMAL DEFAULT 0,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT
+);
+
+-- Staking Positions
+CREATE TABLE IF NOT EXISTS staking_positions (
+    id TEXT PRIMARY KEY,
+    user_email TEXT NOT NULL,
+    amount DECIMAL NOT NULL,
+    tier TEXT NOT NULL,
+    apr DECIMAL NOT NULL,
+    staked_at BIGINT NOT NULL,
+    unlock_at BIGINT,
+    lock_period_days INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'active',
+    total_rewards_earned DECIMAL DEFAULT 0,
+    last_reward_claim BIGINT,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT
+);
+
+-- Staking Rewards
+CREATE TABLE IF NOT EXISTS staking_rewards (
+    id TEXT PRIMARY KEY,
+    position_id TEXT NOT NULL REFERENCES staking_positions(id) ON DELETE CASCADE,
+    user_email TEXT NOT NULL,
+    amount DECIMAL NOT NULL,
+    reward_type TEXT DEFAULT 'apr',
+    claimed BOOLEAN DEFAULT false,
+    claimed_at BIGINT,
+    accrued_at BIGINT NOT NULL
+);
+
+-- Staking History
+CREATE TABLE IF NOT EXISTS staking_history (
+    id TEXT PRIMARY KEY,
+    user_email TEXT NOT NULL,
+    position_id TEXT REFERENCES staking_positions(id),
+    action TEXT NOT NULL,
+    amount DECIMAL NOT NULL,
+    timestamp BIGINT NOT NULL,
+    transaction_hash TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_staking_user ON staking_positions (user_email);
+
+CREATE INDEX IF NOT EXISTS idx_staking_status ON staking_positions (status);
+
+CREATE INDEX IF NOT EXISTS idx_rewards_position ON staking_rewards (position_id);
+
+CREATE INDEX IF NOT EXISTS idx_rewards_unclaimed ON staking_rewards (claimed) WHERE claimed = false;
+
+CREATE INDEX IF NOT EXISTS idx_staking_history_user ON staking_history (user_email);
+
 -- Enable Row Level Security (RLS) if needed, but for now we'll assume service role or simple access
 -- ALTER TABLE virtual_cards ENABLE ROW LEVEL SECURITY;
 -- ... repeat for others

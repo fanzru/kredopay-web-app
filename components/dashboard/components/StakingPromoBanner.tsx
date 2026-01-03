@@ -2,56 +2,64 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Trophy } from "lucide-react";
-import { ScrambleText } from "@/components/ui/ScrambleText";
+import { TrendingUp, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export function StakingPromoBanner() {
+  const router = useRouter();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
-      className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-black p-5 sm:p-6 group"
+      onClick={() => router.push("/dashboard/staking")}
+      className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 sm:p-8 group cursor-pointer hover:border-zinc-700 transition-all"
     >
-      {/* Background Ambience similar to Hero */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-purple-900/20 via-zinc-900/0 to-zinc-900/0" />
-      <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
-
-      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-        <div className="space-y-3 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold tracking-wide uppercase">
-            <Trophy size={14} className="text-yellow-500" />
-            <span>KREDO Event</span>
+      <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        {/* Left Content */}
+        <div className="space-y-3 flex-1">
+          {/* Icon + Title */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg sm:text-xl font-bold text-white">
+                Stake $KREDO
+              </h3>
+              <p className="text-xs text-zinc-500">Earn up to 45% APR</p>
+            </div>
           </div>
 
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tighter leading-none text-white font-sans">
-            STAKING IS <br className="sm:hidden" />
-            <ScrambleText
-              words={[
-                "COMING SOON",
-                "LOADING...",
-                "ALMOST HERE",
-                "PREPARING...",
-              ]}
-              delay={500}
-              pauseDuration={2000}
-              className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400"
-            />
-          </h2>
-
-          <p className="text-zinc-400 text-xs sm:text-sm max-w-lg">
-            Get ready to unlock exclusive rewards. The reflexivity layer is
-            about to activate. Prepare your assets for the next evolution.
+          {/* Description */}
+          <p className="text-sm text-zinc-400 max-w-md">
+            Lock your tokens to unlock premium benefits and earn passive
+            rewards.
           </p>
-        </div>
 
-        {/* Decorative Graphic */}
-        <div className="relative shrink-0">
-          <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full animate-pulse" />
-          <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-zinc-800 to-black border border-zinc-700 flex items-center justify-center shadow-2xl rotate-3 group-hover:rotate-6 transition-transform duration-500">
-            <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-400" />
+          {/* Key Points */}
+          <div className="flex flex-wrap gap-4 text-xs text-zinc-500">
+            <div className="flex items-center gap-1.5">
+              <div className="w-1 h-1 rounded-full bg-zinc-600" />
+              <span>4 Tiers Available</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-1 h-1 rounded-full bg-zinc-600" />
+              <span>Flexible Lock Periods</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-1 h-1 rounded-full bg-zinc-600" />
+              <span>Fee Discounts</span>
+            </div>
           </div>
         </div>
+
+        {/* Right Content - CTA */}
+        <button className="group/btn flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-black text-sm font-bold hover:bg-zinc-200 transition-all">
+          <span>Start Staking</span>
+          <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" />
+        </button>
       </div>
     </motion.div>
   );

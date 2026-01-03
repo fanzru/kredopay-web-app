@@ -6,6 +6,7 @@ import {
   Ghost,
   Send,
   Fingerprint,
+  TrendingUp,
 } from "lucide-react";
 import { TabName } from "../types";
 
@@ -28,6 +29,11 @@ export const MENU_ITEMS: MenuItem[] = [
     label: "Identity",
     id: "identity",
     href: "/dashboard/identity",
+  },
+  {
+    icon: TrendingUp,
+    label: "Staking",
+    href: "/dashboard/staking",
   },
   {
     icon: Send,
