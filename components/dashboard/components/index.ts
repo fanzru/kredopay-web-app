@@ -5,3 +5,5 @@ export { TransactionItem } from "./TransactionItem";
 export { StatusBanner } from "./StatusBanner";
 export { BalanceHeader } from "./BalanceHeader";
 export { ActionModal } from "./ActionModal";
+export { CreateRolePolicyModal } from "./CreateRolePolicyModal";
+export { CreateGlobalConstraintModal } from "./CreateGlobalConstraintModal";

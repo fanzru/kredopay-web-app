@@ -239,6 +239,46 @@ export function usePermissionsAuth() {
     }
   };
 
+  const createGlobalConstraint = async (
+    name: string,
+    value: string | number | boolean,
+    description: string,
+    enabled: boolean = true
+  ) => {
+    if (!isAuthenticated) {
+      throw new Error("Not authenticated");
+    }
+
+    try {
+      // TODO: Implement actual global constraint creation
+      console.log("Creating global constraint:", {
+        name,
+        value,
+        description,
+        enabled,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const newConstraint: GlobalConstraint = {
+        id: `constraint-${Date.now()}`,
+        name,
+        value,
+        enabled,
+        description,
+      };
+
+      setGlobalConstraints((prev) => [...prev, newConstraint]);
+      return newConstraint;
+    } catch (err) {
+      throw new Error(
+        err instanceof Error
+          ? err.message
+          : "Failed to create global constraint"
+      );
+    }
+  };
+
   const updateConstraintValue = async (
     constraintId: string,
     value: string | number | boolean
@@ -275,6 +315,7 @@ export function usePermissionsAuth() {
     createRolePolicy,
     updateRolePolicy,
     deleteRolePolicy,
+    createGlobalConstraint,
     toggleConstraint,
     updateConstraintValue,
   };

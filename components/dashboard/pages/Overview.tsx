@@ -27,6 +27,7 @@ import { StatusBanner } from "../components/StatusBanner";
 import { TransactionItem } from "../components/TransactionItem";
 import { CreateCardModal } from "../components/CreateCardModal";
 import { StakingPromoBanner } from "../components/StakingPromoBanner";
+import { PromotionBanner } from "../components/PromotionBanner";
 import { TopUpModal } from "../components/TopUpModal";
 import { DepositRequestItem } from "../components/DepositRequestItem";
 
@@ -107,24 +108,22 @@ export function Overview() {
                 variant="outline"
                 size="sm"
                 disabled
-                className="flex-1 sm:flex-initial w-full opacity-50 cursor-not-allowed"
+                className="flex-1 sm:flex-initial w-full opacity-50 cursor-not-allowed h-9 sm:h-10 px-0 sm:px-6"
               >
-                <Wallet className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Top Up</span>
-                <span className="sm:hidden">Top Up</span>
+                <Wallet className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="text-[10px] sm:text-xs">Top Up</span>
               </Button>
-              <span className="absolute -top-2 -right-2 bg-white text-black text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
+              <span className="absolute -top-1.5 -right-1 sm:-top-2 sm:-right-2 bg-white text-black text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap z-10">
                 Soon
               </span>
             </div>
             <Button
               size="sm"
               onClick={() => setShowCreateModal(true)}
-              className="flex-1 sm:flex-initial"
+              className="flex-1 sm:flex-initial h-9 sm:h-10 px-0 sm:px-6"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">New Card</span>
-              <span className="sm:hidden">New</span>
+              <Plus className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="text-[10px] sm:text-xs">New Card</span>
             </Button>
           </div>
         </div>
@@ -152,8 +151,8 @@ export function Overview() {
             />
           </div>
 
-          {/* Staking Banner */}
-          <StakingPromoBanner />
+          {/* Promotion Banner */}
+          <PromotionBanner />
 
           {/* Status Banner */}
           <StatusBanner />

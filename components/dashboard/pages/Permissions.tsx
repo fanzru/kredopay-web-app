@@ -15,6 +15,8 @@ import {
   ToggleRight,
 } from "lucide-react";
 import { usePermissionsAuth } from "../hooks/usePermissionsAuth";
+import { CreateRolePolicyModal } from "../components/CreateRolePolicyModal";
+import { CreateGlobalConstraintModal } from "../components/CreateGlobalConstraintModal";
 
 export function Permissions() {
   const router = useRouter();
@@ -26,11 +28,15 @@ export function Permissions() {
     error,
     isAuthenticated,
     toggleConstraint,
+    createRolePolicy,
+    createGlobalConstraint,
   } = usePermissionsAuth();
 
   const [togglingConstraint, setTogglingConstraint] = useState<string | null>(
     null
   );
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showConstraintModal, setShowConstraintModal] = useState(false);
 
   const handleToggleConstraint = async (constraintId: string) => {
     try {
@@ -75,14 +81,18 @@ export function Permissions() {
             Define who can spend what, when, and where.
           </p>
         </div>
-        <Button
-          size="sm"
-          onClick={() =>
-            showToast("info", "Create new policy feature coming soon!")
-          }
-        >
-          <Plus className="mr-2 h-4 w-4" /> New Policy
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowConstraintModal(true)}
+          >
+            <Lock className="mr-2 h-4 w-4" /> New Constraint
+          </Button>
+          <Button size="sm" onClick={() => setShowRoleModal(true)}>
+            <Plus className="mr-2 h-4 w-4" /> New Policy
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -102,10 +112,21 @@ export function Permissions() {
               Role-Based Policies
             </h3>
           </div>
-          <p className="text-sm text-zinc-400 mb-6">
-            Manage permissions for teams and groups (e.g., "Engineering Team",
-            "Marketing Budget").
-          </p>
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-sm text-zinc-400">
+              Manage permissions for teams and groups (e.g., "Engineering Team",
+              "Marketing Budget").
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowRoleModal(true)}
+              className="shrink-0"
+            >
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              Add
+            </Button>
+          </div>
           <div className="space-y-3">
             {isLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
@@ -168,9 +189,21 @@ export function Permissions() {
               Global Constraints
             </h3>
           </div>
-          <p className="text-sm text-zinc-400 mb-6">
-            Safety rules that apply to all spending intents under this account.
-          </p>
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-sm text-zinc-400">
+              Safety rules that apply to all spending intents under this
+              account.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowConstraintModal(true)}
+              className="shrink-0"
+            >
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              Add
+            </Button>
+          </div>
           <div className="space-y-3">
             {isLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
@@ -227,6 +260,25 @@ export function Permissions() {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <CreateRolePolicyModal
+        isOpen={showRoleModal}
+        onClose={() => setShowRoleModal(false)}
+        onCreatePolicy={async (name, accessLevel, dailyLimit, description) => {
+          await createRolePolicy(name, accessLevel, dailyLimit);
+          showToast("success", "Role policy created successfully!");
+        }}
+      />
+
+      <CreateGlobalConstraintModal
+        isOpen={showConstraintModal}
+        onClose={() => setShowConstraintModal(false)}
+        onCreateConstraint={async (name, value, description, enabled) => {
+          await createGlobalConstraint(name, value, description, enabled);
+          showToast("success", "Global constraint created successfully!");
+        }}
+      />
     </div>
   );
 }
