@@ -7,6 +7,8 @@ import {
   Send,
   Fingerprint,
   TrendingUp,
+  CardSimIcon,
+  HistoryIcon,
 } from "lucide-react";
 import { TabName } from "../types";
 
@@ -64,5 +66,11 @@ export const MENU_ITEMS: MenuItem[] = [
     label: "Settings",
     id: "settings",
     href: "/dashboard/settings",
+  },
+  {
+    icon: HistoryIcon,
+    label: "Top-Ups",
+    id: "topups",
+    href: "/dashboard/topups",
   },
 ];

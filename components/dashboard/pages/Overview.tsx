@@ -28,7 +28,6 @@ import { TransactionItem } from "../components/TransactionItem";
 import { CreateCardModal } from "../components/CreateCardModal";
 import { StakingPromoBanner } from "../components/StakingPromoBanner";
 import { PromotionBanner } from "../components/PromotionBanner";
-import { TopUpModal } from "../components/TopUpModal";
 import { DepositRequestItem } from "../components/DepositRequestItem";
 
 export function Overview() {
@@ -55,10 +54,9 @@ export function Overview() {
   } = useDeposits();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showTopUpModal, setShowTopUpModal] = useState(false);
 
   const handleTopUp = () => {
-    setShowTopUpModal(true);
+    router.push("/dashboard/topup");
   };
 
   if (!isAuthenticated) {
@@ -103,20 +101,15 @@ export function Overview() {
             </p>
           </div>
           <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
-            <div className="relative flex-1 sm:flex-initial">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled
-                className="flex-1 sm:flex-initial w-full opacity-50 cursor-not-allowed h-9 sm:h-10 px-0 sm:px-6"
-              >
-                <Wallet className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="text-[10px] sm:text-xs">Top Up</span>
-              </Button>
-              <span className="absolute -top-1.5 -right-1 sm:-top-2 sm:-right-2 bg-white text-black text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap z-10">
-                Soon
-              </span>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTopUp}
+              className="flex-1 sm:flex-initial w-full h-9 sm:h-10 px-0 sm:px-6"
+            >
+              <Wallet className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="text-[10px] sm:text-xs">Top Up</span>
+            </Button>
             <Button
               size="sm"
               onClick={() => setShowCreateModal(true)}
@@ -207,6 +200,32 @@ export function Overview() {
               </button>
             </div>
 
+            {/* KYC Activation Banner */}
+            <div className="mb-6 rounded-xl border border-yellow-500/20 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 p-6 flex items-start gap-4 shadow-lg backdrop-blur-sm relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 opacity-50 group-hover:opacity-100 transition-opacity" />
+              <div className="relative p-2.5 bg-yellow-500/20 rounded-full shrink-0">
+                <AlertCircle className="w-6 h-6 text-yellow-400" />
+              </div>
+              <div className="relative space-y-3 flex-1">
+                <div>
+                  <h4 className="text-base font-bold text-yellow-100 mb-1">
+                    Activate Your Card with KYC
+                  </h4>
+                  <p className="text-sm text-zinc-300 leading-relaxed">
+                    Complete identity verification to activate your virtual card
+                    and start spending.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => router.push("/dashboard/identity")}
+                  className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black font-bold"
+                >
+                  Complete KYC Verification
+                </Button>
+              </div>
+            </div>
+
             {/* Info Banner */}
             {cards.length > 0 && (
               <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 flex items-start gap-4 shadow-sm backdrop-blur-sm relative overflow-hidden group">
@@ -282,12 +301,6 @@ export function Overview() {
         onCreateCard={async (name: string, limit?: number) => {
           await createCard(name, limit);
         }}
-      />
-
-      <TopUpModal
-        isOpen={showTopUpModal}
-        onClose={() => setShowTopUpModal(false)}
-        onDepositCreated={refreshDeposits}
       />
     </div>
   );

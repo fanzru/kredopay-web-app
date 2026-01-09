@@ -119,6 +119,46 @@ export const depositRequests = pgTable(
   })
 );
 
+// Internal Top-Up Requests Table
+export const internalTopupRequests = pgTable(
+  "internal_topup_requests",
+  {
+    id: text("id").primaryKey(),
+    userEmail: text("user_email").notNull(),
+    requestedAmount: decimal("requested_amount").notNull(), // User's requested amount (e.g., 20.00)
+    exactAmount: decimal("exact_amount").notNull(), // Amount with unique 4-digit decimal (e.g., 20.1024)
+    decimalCode: text("decimal_code").notNull(), // The 4-digit unique code (e.g., "1024")
+    currency: text("currency").default("USDC"),
+    userWalletAddress: text("user_wallet_address").notNull(), // User's wallet (for reference)
+    solanaWalletAddress: text("solana_wallet_address").notNull(), // Kredo's Solana wallet
+    topupMethod: text("topup_method").notNull(), // 'wallet_address' or 'moonpay'
+    status: text("status").default("pending"), // pending, approved, rejected, completed
+    cardId: text("card_id").references(() => virtualCards.id, {
+      onDelete: "set null",
+    }),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+    approvedAt: bigint("approved_at", { mode: "number" }),
+    approvedBy: text("approved_by"),
+    completedAt: bigint("completed_at", { mode: "number" }),
+    rejectedAt: bigint("rejected_at", { mode: "number" }),
+    rejectionReason: text("rejection_reason"),
+    adminNotes: text("admin_notes"),
+    transactionHash: text("transaction_hash"), // Solana transaction hash
+    moonpayTransactionId: text("moonpay_transaction_id"),
+  },
+  (table) => ({
+    userEmailIdx: index("idx_internal_topup_user").on(table.userEmail),
+    statusIdx: index("idx_internal_topup_status").on(table.status),
+    methodIdx: index("idx_internal_topup_method").on(table.topupMethod),
+    exactAmountIdx: index("idx_internal_topup_exact_amount").on(
+      table.exactAmount
+    ),
+    decimalCodeIdx: index("idx_internal_topup_decimal_code").on(
+      table.decimalCode
+    ),
+  })
+);
+
 // Type exports for TypeScript
 export type VirtualCard = typeof virtualCards.$inferSelect;
 export type NewVirtualCard = typeof virtualCards.$inferInsert;
@@ -134,3 +174,35 @@ export type NewOtpCode = typeof otpCodes.$inferInsert;
 
 export type DepositRequest = typeof depositRequests.$inferSelect;
 export type NewDepositRequest = typeof depositRequests.$inferInsert;
+
+export type InternalTopupRequest = typeof internalTopupRequests.$inferSelect;
+export type NewInternalTopupRequest = typeof internalTopupRequests.$inferInsert;
+
+// KYC Verifications Table
+export const kycVerifications = pgTable(
+  "kyc_verifications",
+  {
+    id: text("id").primaryKey(),
+    userEmail: text("user_email").notNull().unique(),
+    fullName: text("full_name").notNull(),
+    idNumber: text("id_number").notNull(), // ID Card / Passport number
+    dateOfBirth: text("date_of_birth"), // Optional: YYYY-MM-DD
+    nationality: text("nationality"), // Optional
+    selfiePath: text("selfie_path").notNull(), // Cloudflare R2 full path
+    idCardPath: text("id_card_path").notNull(), // Cloudflare R2 full path
+    status: text("status").default("pending"), // pending, verified, rejected
+    submittedAt: bigint("submitted_at", { mode: "number" }).notNull(),
+    verifiedAt: bigint("verified_at", { mode: "number" }),
+    verifiedBy: text("verified_by"), // Admin email who verified
+    rejectedAt: bigint("rejected_at", { mode: "number" }),
+    rejectionReason: text("rejection_reason"),
+    adminNotes: text("admin_notes"),
+  },
+  (table) => ({
+    userEmailIdx: index("idx_kyc_user").on(table.userEmail),
+    statusIdx: index("idx_kyc_status").on(table.status),
+  })
+);
+
+export type KycVerification = typeof kycVerifications.$inferSelect;
+export type NewKycVerification = typeof kycVerifications.$inferInsert;

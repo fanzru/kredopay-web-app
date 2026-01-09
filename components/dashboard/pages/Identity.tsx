@@ -1,236 +1,589 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Fingerprint,
-  Shield,
-  Key,
-  Clock,
-  UserX,
-  CheckCircle2,
-  RefreshCw,
-  QrCode,
-  Laptop,
-  Smartphone,
+  Camera,
+  Upload,
+  CheckCircle,
+  XCircle,
   Loader2,
-  LogOut,
-  Mail,
+  AlertCircle,
+  FileText,
+  User,
+  Calendar,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { StorageService } from "../services/storage";
-import { useIdentityAuth } from "../hooks/useIdentityAuth";
+
+type KYCStatus = "not_submitted" | "pending" | "verified" | "rejected";
+
+interface KYCData {
+  status: KYCStatus;
+  fullName?: string;
+  idNumber?: string;
+  submittedAt?: number;
+  verifiedAt?: number;
+  rejectedAt?: number;
+  rejectionReason?: string;
+}
 
 export function Identity() {
   const router = useRouter();
-  const {
-    session,
-    proofStatuses,
-    devices,
-    isLoading,
-    error,
-    isAuthenticated,
-    rotateKeys,
-    generateNewProof,
-    revokeDevice,
-    getTimeUntilExpiry,
-  } = useIdentityAuth();
-
-  const [isRotating, setIsRotating] = useState(false);
-  const [isGeneratingProof, setIsGeneratingProof] = useState(false);
-
   const { showToast } = useToast();
 
-  const handleRotateKeys = async () => {
+  const [kycStatus, setKycStatus] = useState<KYCData>({
+    status: "not_submitted",
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form state
+  const [fullName, setFullName] = useState("");
+  const [idNumber, setIdNumber] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [nationality, setNationality] = useState("");
+
+  // Image state
+  const [selfieFile, setSelfieFile] = useState<File | null>(null);
+  const [selfiePreview, setSelfiePreview] = useState<string>("");
+  const [idCardFile, setIdCardFile] = useState<File | null>(null);
+  const [idCardPreview, setIdCardPreview] = useState<string>("");
+
+  // Camera state
+  const [showSelfieCamera, setShowSelfieCamera] = useState(false);
+  const [showIdCamera, setShowIdCamera] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Fetch KYC status on mount
+  React.useEffect(() => {
+    const fetchKYCStatus = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/kyc/status");
+        if (response.ok) {
+          const data = await response.json();
+          setKycStatus(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch KYC status:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchKYCStatus();
+  }, []);
+
+  // Start camera
+  const startCamera = async (type: "selfie" | "id") => {
     try {
-      setIsRotating(true);
-      await rotateKeys();
-      showToast("success", "Keys rotated successfully!");
-    } catch (err) {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: type === "selfie" ? "user" : "environment" },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      if (type === "selfie") {
+        setShowSelfieCamera(true);
+      } else {
+        setShowIdCamera(true);
+      }
+    } catch (error) {
+      showToast("error", "Camera access denied");
+    }
+  };
+
+  // Stop camera
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setShowSelfieCamera(false);
+    setShowIdCamera(false);
+  };
+
+  // Capture photo
+  const capturePhoto = (type: "selfie" | "id") => {
+    if (!videoRef.current) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.drawImage(videoRef.current, 0, 0);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const file = new File([blob], `${type}-${Date.now()}.jpg`, {
+        type: "image/jpeg",
+      });
+      const preview = URL.createObjectURL(blob);
+
+      if (type === "selfie") {
+        setSelfieFile(file);
+        setSelfiePreview(preview);
+      } else {
+        setIdCardFile(file);
+        setIdCardPreview(preview);
+      }
+      stopCamera();
+    }, "image/jpeg");
+  };
+
+  // Handle file upload
+  const handleFileUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "selfie" | "id"
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showToast("error", "Please upload an image file");
+      return;
+    }
+
+    const preview = URL.createObjectURL(file);
+    if (type === "selfie") {
+      setSelfieFile(file);
+      setSelfiePreview(preview);
+    } else {
+      setIdCardFile(file);
+      setIdCardPreview(preview);
+    }
+  };
+
+  // Submit KYC
+  const handleSubmit = async () => {
+    if (!fullName || !idNumber || !selfieFile || !idCardFile) {
+      showToast("error", "Please fill all required fields");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append("fullName", fullName);
+      formData.append("idNumber", idNumber);
+      formData.append("dateOfBirth", dateOfBirth);
+      formData.append("nationality", nationality);
+      formData.append("selfie", selfieFile);
+      formData.append("idCard", idCardFile);
+
+      const response = await fetch("/api/kyc/submit", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to submit KYC");
+      }
+
+      const data = await response.json();
+      setKycStatus({
+        status: "pending",
+        fullName,
+        idNumber,
+        submittedAt: Date.now(),
+      });
+
       showToast(
-        "error",
-        err instanceof Error ? err.message : "Key rotation failed"
+        "success",
+        "KYC submitted successfully! Verification in progress."
       );
+    } catch (error) {
+      showToast("error", "Failed to submit KYC. Please try again.");
     } finally {
-      setIsRotating(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleGenerateProof = async () => {
-    try {
-      setIsGeneratingProof(true);
-      await generateNewProof("solvency");
-      showToast("success", "Proof generated successfully!");
-    } catch (err) {
-      showToast(
-        "error",
-        err instanceof Error ? err.message : "Proof generation failed"
-      );
-    } finally {
-      setIsGeneratingProof(false);
+  // Render status badge
+  const renderStatusBadge = () => {
+    switch (kycStatus.status) {
+      case "pending":
+        return (
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20">
+            <Loader2 className="h-4 w-4 text-yellow-400 animate-spin" />
+            <span className="text-sm font-semibold text-yellow-300">
+              Verification Pending
+            </span>
+          </div>
+        );
+      case "verified":
+        return (
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20">
+            <CheckCircle className="h-4 w-4 text-green-400" />
+            <span className="text-sm font-semibold text-green-300">
+              Verified
+            </span>
+          </div>
+        );
+      case "rejected":
+        return (
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20">
+            <XCircle className="h-4 w-4 text-red-400" />
+            <span className="text-sm font-semibold text-red-300">Rejected</span>
+          </div>
+        );
+      default:
+        return null;
     }
   };
 
-  const handleRevokeDevice = async (deviceId: string) => {
-    try {
-      await revokeDevice(deviceId);
-      showToast("success", "Device revoked successfully!");
-    } catch (err) {
-      showToast(
-        "error",
-        err instanceof Error ? err.message : "Device revocation failed"
-      );
-    }
-  };
-
-  const handleLogout = () => {
-    StorageService.removeAuthToken();
-    router.push("/login"); // Use router push to match import
-    showToast("success", "Logged out successfully");
-  };
-
-  if (!isAuthenticated) {
+  // If pending or verified, show status
+  if (kycStatus.status === "pending" || kycStatus.status === "verified") {
     return (
-      <div className="max-w-5xl mx-auto space-y-8 pb-20">
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-12 text-center">
-          <LogOut className="h-16 w-16 text-zinc-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-white mb-2">
-            Not Authenticated
-          </h2>
-          <p className="text-zinc-400 mb-6">
-            Please login to view your identity information.
-          </p>
-          <Button onClick={() => router.push("/login")}>Go to Login</Button>
+      <div className="max-w-3xl mx-auto space-y-6 pb-20 px-4 sm:px-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+            Identity Verification
+          </h1>
+          <p className="text-sm text-zinc-400">Your KYC verification status</p>
+        </div>
+
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-white">
+              Verification Status
+            </h3>
+            {renderStatusBadge()}
+          </div>
+
+          {kycStatus.status === "pending" && (
+            <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-blue-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-blue-300 mb-1">
+                    Verification in Progress
+                  </p>
+                  <p className="text-xs text-blue-200/70 leading-relaxed">
+                    Your identity documents are being reviewed by our team. This
+                    process typically takes <strong>10-14 business days</strong>
+                    . We'll notify you once verification is complete.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {kycStatus.status === "verified" && (
+            <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-green-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-green-300 mb-1">
+                    Identity Verified
+                  </p>
+                  <p className="text-xs text-green-200/70 leading-relaxed">
+                    Your identity has been successfully verified. You can now
+                    activate your virtual cards and start spending.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3 pt-4 border-t border-zinc-800">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-zinc-500">Full Name</span>
+              <span className="text-white font-medium">
+                {kycStatus.fullName}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-zinc-500">ID Number</span>
+              <span className="text-white font-medium">
+                {kycStatus.idNumber}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-zinc-500">Submitted</span>
+              <span className="text-white font-medium">
+                {kycStatus.submittedAt
+                  ? new Date(kycStatus.submittedAt).toLocaleDateString()
+                  : "-"}
+              </span>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={() => router.push("/dashboard")}
+            className="w-full"
+          >
+            Back to Dashboard
+          </Button>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-20">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            Accountless Identity
-            <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
-              ZK-Verified
-            </span>
-          </h1>
-          <p className="text-zinc-500">
-            Manage your ephemeral sessions and zero-knowledge proofs.
-          </p>
+  // Show camera modal
+  if (showSelfieCamera || showIdCamera) {
+    return (
+      <div className="fixed inset-0 bg-black z-50 flex flex-col">
+        <div className="flex-1 relative">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            className="w-full h-full object-cover"
+          />
         </div>
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRotateKeys}
-            disabled={isRotating || isLoading}
-          >
-            {isRotating ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="mr-2 h-4 w-4" />
-            )}
-            Rotate Keys
+        <div className="p-6 bg-zinc-900 flex items-center justify-center gap-4">
+          <Button variant="outline" onClick={stopCamera}>
+            Cancel
           </Button>
           <Button
-            size="sm"
-            onClick={handleGenerateProof}
-            disabled={isGeneratingProof || isLoading}
+            onClick={() => capturePhoto(showSelfieCamera ? "selfie" : "id")}
+            className="bg-blue-500 hover:bg-blue-600"
           >
-            {isGeneratingProof ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Fingerprint className="mr-2 h-4 w-4" />
-            )}
-            New Proof
+            <Camera className="mr-2 h-4 w-4" />
+            Capture Photo
           </Button>
         </div>
       </div>
+    );
+  }
 
-      {error && (
-        <div className="rounded-xl bg-red-900/10 border border-red-900/20 p-4">
-          <p className="text-sm text-red-400">{error}</p>
-        </div>
-      )}
+  // Show KYC form
+  return (
+    <div className="max-w-3xl mx-auto space-y-6 pb-20 px-4 sm:px-6">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+          Identity Verification
+        </h1>
+        <p className="text-sm text-zinc-400">
+          Complete KYC to activate your virtual card
+        </p>
+      </div>
 
-      {/* Hero Status Card */}
-      <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-black p-1">
-        <div className="rounded-xl bg-zinc-950/50 p-6 backdrop-blur-xl">
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="relative group cursor-pointer">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full blur-xl opacity-20 group-hover:opacity-30 transition-opacity" />
-              <div className="relative h-24 w-24 rounded-full bg-zinc-900 border-2 border-zinc-800 flex items-center justify-center">
-                <UserX className="h-10 w-10 text-zinc-400 group-hover:text-white transition-colors" />
-                <div className="absolute -bottom-1 -right-1 bg-emerald-500 border-4 border-zinc-900 rounded-full p-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-white" />
-                </div>
-              </div>
-            </div>
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 sm:p-8 space-y-6">
+        {/* Personal Information */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <User className="h-5 w-5 text-blue-400" />
+            Personal Information
+          </h3>
 
-            <div className="flex-1 text-center md:text-left space-y-2">
-              <h2 className="text-xl font-semibold text-white">
-                You are Anonymous
-              </h2>
-              <p className="text-zinc-400 text-sm max-w-xl">
-                This session is not linked to any permanent on-chain identifier.
-                Your actions are authorized via Zero-Knowledge Proofs related to
-                your real-world assets/identity, without revealing them.
-              </p>
-              <div className="flex items-center justify-center md:justify-start gap-4 pt-2 flex-wrap">
-                {session?.email && (
-                  <div className="flex items-center gap-2 text-xs text-zinc-500 bg-zinc-900/50 px-3 py-1.5 rounded-full border border-zinc-800">
-                    <Mail className="h-3 w-3" />
-                    <span>{session.email}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-xs text-zinc-500 bg-zinc-900/50 px-3 py-1.5 rounded-full border border-zinc-800">
-                  <Clock className="h-3 w-3" />
-                  <span>
-                    Session expires in {getTimeUntilExpiry() || "..."}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-zinc-500 bg-zinc-900/50 px-3 py-1.5 rounded-full border border-zinc-800">
-                  <Key className="h-3 w-3" />
-                  <span>Session ID: {session?.sessionId || "..."}</span>
-                </div>
-              </div>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-2">
+                Full Name *
+              </label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="As shown on ID"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white placeholder-zinc-500 outline-none focus:border-blue-500"
+              />
             </div>
 
             <div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="text-red-400 border-red-900/30 hover:bg-red-900/10 hover:border-red-900/50"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </Button>
+              <label className="block text-sm font-medium text-zinc-400 mb-2">
+                ID Number *
+              </label>
+              <input
+                type="text"
+                value={idNumber}
+                onChange={(e) => setIdNumber(e.target.value)}
+                placeholder="Passport or National ID number"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white placeholder-zinc-500 outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-2">
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-2">
+                  Nationality
+                </label>
+                <input
+                  type="text"
+                  value={nationality}
+                  onChange={(e) => setNationality(e.target.value)}
+                  placeholder="e.g., Indonesian"
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white placeholder-zinc-500 outline-none focus:border-blue-500"
+                />
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Document Upload */}
+        <div className="space-y-4 pt-6 border-t border-zinc-800">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <FileText className="h-5 w-5 text-blue-400" />
+            Identity Documents
+          </h3>
+
+          {/* Selfie */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-3">
+              Selfie Photo *
+            </label>
+            {selfiePreview ? (
+              <div className="relative rounded-lg overflow-hidden border border-zinc-700">
+                <img
+                  src={selfiePreview}
+                  alt="Selfie"
+                  className="w-full h-64 object-cover"
+                />
+                <button
+                  onClick={() => {
+                    setSelfieFile(null);
+                    setSelfiePreview("");
+                  }}
+                  className="absolute top-2 right-2 p-2 bg-red-500 rounded-full hover:bg-red-600"
+                >
+                  <XCircle className="h-4 w-4 text-white" />
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => startCamera("selfie")}
+                  className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900 p-6 hover:border-blue-500 hover:bg-zinc-800 transition-colors"
+                >
+                  <Camera className="h-8 w-8 text-zinc-500" />
+                  <span className="text-sm font-medium text-zinc-400">
+                    Take Photo
+                  </span>
+                </button>
+                <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900 p-6 hover:border-blue-500 hover:bg-zinc-800 transition-colors cursor-pointer">
+                  <Upload className="h-8 w-8 text-zinc-500" />
+                  <span className="text-sm font-medium text-zinc-400">
+                    Upload File
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, "selfie")}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* ID Card */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-3">
+              ID Card / Passport *
+            </label>
+            {idCardPreview ? (
+              <div className="relative rounded-lg overflow-hidden border border-zinc-700">
+                <img
+                  src={idCardPreview}
+                  alt="ID Card"
+                  className="w-full h-64 object-cover"
+                />
+                <button
+                  onClick={() => {
+                    setIdCardFile(null);
+                    setIdCardPreview("");
+                  }}
+                  className="absolute top-2 right-2 p-2 bg-red-500 rounded-full hover:bg-red-600"
+                >
+                  <XCircle className="h-4 w-4 text-white" />
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => startCamera("id")}
+                  className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900 p-6 hover:border-blue-500 hover:bg-zinc-800 transition-colors"
+                >
+                  <Camera className="h-8 w-8 text-zinc-500" />
+                  <span className="text-sm font-medium text-zinc-400">
+                    Take Photo
+                  </span>
+                </button>
+                <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900 p-6 hover:border-blue-500 hover:bg-zinc-800 transition-colors cursor-pointer">
+                  <Upload className="h-8 w-8 text-zinc-500" />
+                  <span className="text-sm font-medium text-zinc-400">
+                    Upload File
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, "id")}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Info */}
+        <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-blue-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-blue-300 mb-1">
+                Verification Timeline
+              </p>
+              <p className="text-xs text-blue-200/70 leading-relaxed">
+                Your documents will be reviewed within{" "}
+                <strong>10-14 business days</strong>. Make sure all information
+                is clear and matches your official ID.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <div className="flex gap-3 pt-4">
+          <Button
+            variant="outline"
+            onClick={() => router.push("/dashboard")}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={
+              isSubmitting ||
+              !fullName ||
+              !idNumber ||
+              !selfieFile ||
+              !idCardFile
+            }
+            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              "Submit for Verification"
+            )}
+          </Button>
+        </div>
       </div>
     </div>
-  );
-}
-
-function PlusIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 4v16m8-8H4"
-      />
-    </svg>
   );
 }

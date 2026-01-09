@@ -26,4 +26,5 @@ export type TabName =
   | "permissions"
   | "fog"
   | "history"
-  | "settings";
+  | "settings"
+  | "topups";
