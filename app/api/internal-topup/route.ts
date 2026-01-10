@@ -58,9 +58,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (amount < 1) {
+    if (amount < 25) {
       return NextResponse.json(
-        { error: "Minimum top-up amount is $1" },
+        { error: "Minimum top-up amount is $25" },
         { status: 400 }
       );
     }

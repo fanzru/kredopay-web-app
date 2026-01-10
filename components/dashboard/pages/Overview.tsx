@@ -199,51 +199,44 @@ export function Overview() {
                 <span className="hidden sm:inline">New Card</span>
               </button>
             </div>
+            <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 p-6 flex items-center justify-between gap-4 mb-6 min-h-[140px]">
+              {/* Abstract Pattern - Orange Theme */}
+              <div className="absolute top-0 right-0 h-full w-1/3 overflow-hidden pointer-events-none">
+                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-orange-500/20 blur-xl" />
+                <div className="absolute top-0 right-10 w-32 h-32 rounded-full bg-amber-500/20 blur-lg" />
+                <div className="absolute -top-6 -right-6 w-48 h-48 rounded-full border-[20px] border-white/5 opacity-50" />
+              </div>
 
-            {/* KYC Activation Banner */}
-            <div className="mb-6 rounded-xl border border-yellow-500/20 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 p-6 flex items-start gap-4 shadow-lg backdrop-blur-sm relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 opacity-50 group-hover:opacity-100 transition-opacity" />
-              <div className="relative p-2.5 bg-yellow-500/20 rounded-full shrink-0">
-                <AlertCircle className="w-6 h-6 text-yellow-400" />
-              </div>
-              <div className="relative space-y-3 flex-1">
-                <div>
-                  <h4 className="text-base font-bold text-yellow-100 mb-1">
-                    Activate Your Card with KYC
-                  </h4>
-                  <p className="text-sm text-zinc-300 leading-relaxed">
-                    Complete identity verification to activate your virtual card
-                    and start spending.
-                  </p>
+              <div className="relative z-10 flex-1 min-w-0 max-w-[70%] space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20 uppercase tracking-wider whitespace-nowrap">
+                    ACTION REQUIRED
+                  </div>
+                  {cards.length > 0 && (
+                    <span className="text-[10px] text-zinc-500 font-medium">
+                      {cards.length} cards pending
+                    </span>
+                  )}
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => router.push("/dashboard/identity")}
-                  className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black font-bold"
-                >
-                  Complete KYC Verification
-                </Button>
+
+                <h2 className="text-lg font-bold text-white leading-tight">
+                  Verify Identity
+                </h2>
+
+                <p className="text-zinc-500 text-xs leading-snug line-clamp-2">
+                  Complete KYC to unlock more features.
+                </p>
               </div>
+
+              <button
+                onClick={() => router.push("/dashboard/identity")}
+                className="relative z-10 shrink-0 px-4 py-2 rounded-lg bg-orange-500 text-black text-[10px] font-bold hover:bg-orange-600 transition-colors whitespace-nowrap shadow-lg shadow-orange-500/20"
+              >
+                Verify Now
+              </button>
             </div>
 
             {/* Info Banner */}
-            {cards.length > 0 && (
-              <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 flex items-start gap-4 shadow-sm backdrop-blur-sm relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
-                <div className="relative p-2 bg-blue-500/10 rounded-full shrink-0">
-                  <AlertCircle className="w-5 h-5 text-blue-400" />
-                </div>
-                <div className="relative space-y-1">
-                  <h4 className="text-sm font-semibold text-blue-100">
-                    Activation Pending
-                  </h4>
-                  <p className="text-sm text-zinc-400 leading-relaxed max-w-md">
-                    This card remains inactive until you top up and submit your
-                    card number.
-                  </p>
-                </div>
-              </div>
-            )}
 
             {cards.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/30 p-8 sm:p-16 text-center">

@@ -87,8 +87,8 @@ export default function TopUpPage() {
       return;
     }
 
-    if (parseFloat(amount) < 1) {
-      showToast("warning", "Minimum top-up amount is $1");
+    if (parseFloat(amount) < 25) {
+      showToast("warning", "Minimum top-up amount is $25");
       return;
     }
 
@@ -245,7 +245,7 @@ export default function TopUpPage() {
                     }
                   }}
                   placeholder="100.00"
-                  min="1"
+                  min="25"
                   step="0.01"
                   className="w-full rounded-lg border border-zinc-800 bg-zinc-900/30 pl-9 pr-4 py-3 text-lg text-white placeholder-zinc-600 outline-none transition-all focus:border-zinc-700 focus:bg-zinc-900/50"
                   disabled={isCreating}
@@ -253,7 +253,7 @@ export default function TopUpPage() {
                 />
               </div>
               <p className="text-[10px] text-zinc-500 mt-1.5">
-                Min: $1 | Max: $100,000
+                Min: $25 | Max: $100,000
               </p>
             </div>
 
@@ -331,7 +331,7 @@ export default function TopUpPage() {
                 disabled={
                   isCreating ||
                   !amount ||
-                  parseFloat(amount) < 1 ||
+                  parseFloat(amount) < 25 ||
                   !userWalletAddress ||
                   userWalletAddress.length < 10 ||
                   !selectedCardId

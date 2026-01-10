@@ -1,3 +1,26 @@
+## KYC Verification Launch
+
+```
+🔐 Identity verification is now live.
+
+Complete KYC to unlock your virtual cards.
+
+Built with enterprise-grade security:
+✅ PCI DSS Compliant
+✅ ISO 27001 Certified
+✅ Bank-level encryption
+✅ Zero-knowledge architecture
+
+Accountless doesn't mean unregulated.
+We meet VISA standards without compromising privacy.
+
+Verify your identity. Keep your privacy.
+
+$KREDO 👁️
+```
+
+---
+
 Accounts are a security flaw.
 
 We are building the world's first Accountless Financial OS.
@@ -1221,7 +1244,6 @@ No accounts. No balances. Just cryptographic permission.
 Coming soon: **Autonomous Recursive Provers**.
 The Guardians become code. The speed becomes instant.
 
-We are building the most secure financial OS in history.
 
 $KREDO 👁️
 ```

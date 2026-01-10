@@ -13,6 +13,12 @@ import {
   User,
   Calendar,
   CreditCard,
+  RefreshCw,
+  Fingerprint,
+  Clock,
+  Key,
+  LogOut,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
@@ -36,7 +42,7 @@ export function Identity() {
   const [kycStatus, setKycStatus] = useState<KYCData>({
     status: "not_submitted",
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
@@ -57,12 +63,24 @@ export function Identity() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Viewing state
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
+
   // Fetch KYC status on mount
   React.useEffect(() => {
     const fetchKYCStatus = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("/api/kyc/status");
+        const userEmail = localStorage.getItem("kredo_user_email") || "";
+        const token = localStorage.getItem("kredo_auth_token") || "";
+
+        const response = await fetch("/api/kyc/status", {
+          headers: {
+            "X-User-Email": userEmail,
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
         if (response.ok) {
           const data = await response.json();
           setKycStatus(data);
@@ -168,6 +186,10 @@ export function Identity() {
 
     setIsSubmitting(true);
     try {
+      // Get user email and token from localStorage
+      const userEmail = localStorage.getItem("kredo_user_email") || "";
+      const token = localStorage.getItem("kredo_auth_token") || "";
+
       const formData = new FormData();
       formData.append("fullName", fullName);
       formData.append("idNumber", idNumber);
@@ -178,11 +200,16 @@ export function Identity() {
 
       const response = await fetch("/api/kyc/submit", {
         method: "POST",
+        headers: {
+          "X-User-Email": userEmail,
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error("Failed to submit KYC");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to submit KYC");
       }
 
       const data = await response.json();
@@ -198,7 +225,13 @@ export function Identity() {
         "KYC submitted successfully! Verification in progress."
       );
     } catch (error) {
-      showToast("error", "Failed to submit KYC. Please try again.");
+      console.error("KYC submission error:", error);
+      showToast(
+        "error",
+        error instanceof Error
+          ? error.message
+          : "Failed to submit KYC. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -237,10 +270,22 @@ export function Identity() {
     }
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
+        <p className="text-sm text-zinc-400">Loading verification status...</p>
+      </div>
+    );
+  }
+
   // If pending or verified, show status
   if (kycStatus.status === "pending" || kycStatus.status === "verified") {
     return (
       <div className="max-w-3xl mx-auto space-y-6 pb-20 px-4 sm:px-6">
+        <AccountlessSection />
+
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
             Identity Verification
@@ -248,8 +293,8 @@ export function Identity() {
           <p className="text-sm text-zinc-400">Your KYC verification status</p>
         </div>
 
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 space-y-6">
-          <div className="flex items-center justify-between">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
             <h3 className="text-lg font-bold text-white">
               Verification Status
             </h3>
@@ -265,9 +310,10 @@ export function Identity() {
                     Verification in Progress
                   </p>
                   <p className="text-xs text-blue-200/70 leading-relaxed">
-                    Your identity documents are being reviewed by our team. This
-                    process typically takes <strong>10-14 business days</strong>
-                    . We'll notify you once verification is complete.
+                    Your identity documents are being reviewed by our Visa
+                    Issuance team. This process typically takes{" "}
+                    <strong>10-14 business days</strong>. We'll notify you once
+                    verification is complete.
                   </p>
                 </div>
               </div>
@@ -291,20 +337,20 @@ export function Identity() {
             </div>
           )}
 
-          <div className="space-y-3 pt-4 border-t border-zinc-800">
-            <div className="flex items-center justify-between text-sm">
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between text-sm py-2 border-b border-zinc-900">
               <span className="text-zinc-500">Full Name</span>
               <span className="text-white font-medium">
                 {kycStatus.fullName}
               </span>
             </div>
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-sm py-2 border-b border-zinc-900">
               <span className="text-zinc-500">ID Number</span>
               <span className="text-white font-medium">
                 {kycStatus.idNumber}
               </span>
             </div>
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-sm py-2">
               <span className="text-zinc-500">Submitted</span>
               <span className="text-white font-medium">
                 {kycStatus.submittedAt
@@ -316,8 +362,9 @@ export function Identity() {
 
           <Button
             variant="outline"
+            size="sm"
             onClick={() => router.push("/dashboard")}
-            className="w-full"
+            className="w-full bg-zinc-900 border-zinc-800 hover:bg-zinc-800"
           >
             Back to Dashboard
           </Button>
@@ -354,9 +401,33 @@ export function Identity() {
     );
   }
 
+  // Show image preview modal
+  if (viewingImage) {
+    return (
+      <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4">
+        <div className="relative w-full max-w-4xl h-full flex flex-col items-center justify-center">
+          <img
+            src={viewingImage}
+            alt="Preview"
+            className="max-w-full max-h-[85vh] object-contain rounded-lg"
+          />
+          <Button
+            variant="outline"
+            onClick={() => setViewingImage(null)}
+            className="mt-6 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-white"
+          >
+            Close Preview
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // Show KYC form
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-20 px-4 sm:px-6">
+      <AccountlessSection />
+
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
           Identity Verification
@@ -366,17 +437,17 @@ export function Identity() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 sm:p-8 space-y-6">
+      <div className="space-y-8">
         {/* Personal Information */}
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-zinc-800 pb-2">
             <User className="h-5 w-5 text-blue-400" />
             Personal Information
           </h3>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-2">
+              <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">
                 Full Name *
               </label>
               <input
@@ -384,12 +455,12 @@ export function Identity() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="As shown on ID"
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white placeholder-zinc-500 outline-none focus:border-blue-500"
+                className="w-full bg-transparent border-b border-zinc-800 px-0 py-2 text-white placeholder-zinc-600 outline-none focus:border-blue-500 focus:ring-0 transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-2">
+              <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">
                 ID Number *
               </label>
               <input
@@ -397,33 +468,36 @@ export function Identity() {
                 value={idNumber}
                 onChange={(e) => setIdNumber(e.target.value)}
                 placeholder="Passport or National ID number"
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white placeholder-zinc-500 outline-none focus:border-blue-500"
+                className="w-full bg-transparent border-b border-zinc-800 px-0 py-2 text-white placeholder-zinc-600 outline-none focus:border-blue-500 focus:ring-0 transition-colors"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">
+                <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">
                   Date of Birth
                 </label>
-                <input
-                  type="date"
-                  value={dateOfBirth}
-                  onChange={(e) => setDateOfBirth(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white outline-none focus:border-blue-500"
-                />
+                <div className="relative">
+                  <Calendar className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
+                  <input
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                    className="w-full bg-transparent border-b border-zinc-800 px-0 py-2 text-white outline-none focus:border-blue-500 focus:ring-0 transition-colors [color-scheme:dark]"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-2">
+                <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">
                   Nationality
                 </label>
                 <input
                   type="text"
                   value={nationality}
                   onChange={(e) => setNationality(e.target.value)}
-                  placeholder="e.g., Indonesian"
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white placeholder-zinc-500 outline-none focus:border-blue-500"
+                  placeholder="e.g., American"
+                  className="w-full bg-transparent border-b border-zinc-800 px-0 py-2 text-white placeholder-zinc-600 outline-none focus:border-blue-500 focus:ring-0 transition-colors"
                 />
               </div>
             </div>
@@ -431,50 +505,58 @@ export function Identity() {
         </div>
 
         {/* Document Upload */}
-        <div className="space-y-4 pt-6 border-t border-zinc-800">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-zinc-800 pb-2">
             <FileText className="h-5 w-5 text-blue-400" />
             Identity Documents
           </h3>
 
           {/* Selfie */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-3">
-              Selfie Photo *
-            </label>
-            {selfiePreview ? (
-              <div className="relative rounded-lg overflow-hidden border border-zinc-700">
-                <img
-                  src={selfiePreview}
-                  alt="Selfie"
-                  className="w-full h-64 object-cover"
-                />
+          <div className="flex items-center justify-between py-2">
+            <div>
+              <label className="block text-sm font-medium text-white mb-1">
+                Selfie Photo *
+              </label>
+              <p className="text-xs text-zinc-500">
+                Take a clear photo of your face
+              </p>
+            </div>
+
+            {selfieFile ? (
+              <div className="flex items-center gap-2 bg-zinc-900 rounded-lg px-3 py-2 border border-zinc-800">
+                <span className="text-xs text-zinc-300 max-w-[120px] truncate">
+                  {selfieFile.name}
+                </span>
+                <button
+                  onClick={() => setViewingImage(selfiePreview)}
+                  className="text-zinc-500 hover:text-blue-400 transition-colors"
+                  title="View image"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
                 <button
                   onClick={() => {
                     setSelfieFile(null);
                     setSelfiePreview("");
                   }}
-                  className="absolute top-2 right-2 p-2 bg-red-500 rounded-full hover:bg-red-600"
+                  className="text-zinc-500 hover:text-red-400 transition-colors"
+                  title="Remove image"
                 >
-                  <XCircle className="h-4 w-4 text-white" />
+                  <XCircle className="h-4 w-4" />
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex gap-2">
                 <button
                   onClick={() => startCamera("selfie")}
-                  className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900 p-6 hover:border-blue-500 hover:bg-zinc-800 transition-colors"
+                  className="px-3 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2"
                 >
-                  <Camera className="h-8 w-8 text-zinc-500" />
-                  <span className="text-sm font-medium text-zinc-400">
-                    Take Photo
-                  </span>
+                  <Camera className="h-3.5 w-3.5" />
+                  Camera
                 </button>
-                <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900 p-6 hover:border-blue-500 hover:bg-zinc-800 transition-colors cursor-pointer">
-                  <Upload className="h-8 w-8 text-zinc-500" />
-                  <span className="text-sm font-medium text-zinc-400">
-                    Upload File
-                  </span>
+                <label className="px-3 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2 cursor-pointer">
+                  <Upload className="h-3.5 w-3.5" />
+                  Upload
                   <input
                     type="file"
                     accept="image/*"
@@ -487,43 +569,49 @@ export function Identity() {
           </div>
 
           {/* ID Card */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-3">
-              ID Card / Passport *
-            </label>
-            {idCardPreview ? (
-              <div className="relative rounded-lg overflow-hidden border border-zinc-700">
-                <img
-                  src={idCardPreview}
-                  alt="ID Card"
-                  className="w-full h-64 object-cover"
-                />
+          <div className="flex items-center justify-between py-2">
+            <div>
+              <label className="block text-sm font-medium text-white mb-1">
+                ID Card / Passport *
+              </label>
+              <p className="text-xs text-zinc-500">Official government ID</p>
+            </div>
+
+            {idCardFile ? (
+              <div className="flex items-center gap-2 bg-zinc-900 rounded-lg px-3 py-2 border border-zinc-800">
+                <span className="text-xs text-zinc-300 max-w-[120px] truncate">
+                  {idCardFile.name}
+                </span>
+                <button
+                  onClick={() => setViewingImage(idCardPreview)}
+                  className="text-zinc-500 hover:text-blue-400 transition-colors"
+                  title="View image"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
                 <button
                   onClick={() => {
                     setIdCardFile(null);
                     setIdCardPreview("");
                   }}
-                  className="absolute top-2 right-2 p-2 bg-red-500 rounded-full hover:bg-red-600"
+                  className="text-zinc-500 hover:text-red-400 transition-colors"
+                  title="Remove image"
                 >
-                  <XCircle className="h-4 w-4 text-white" />
+                  <XCircle className="h-4 w-4" />
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex gap-2">
                 <button
                   onClick={() => startCamera("id")}
-                  className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900 p-6 hover:border-blue-500 hover:bg-zinc-800 transition-colors"
+                  className="px-3 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2"
                 >
-                  <Camera className="h-8 w-8 text-zinc-500" />
-                  <span className="text-sm font-medium text-zinc-400">
-                    Take Photo
-                  </span>
+                  <Camera className="h-3.5 w-3.5" />
+                  Camera
                 </button>
-                <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900 p-6 hover:border-blue-500 hover:bg-zinc-800 transition-colors cursor-pointer">
-                  <Upload className="h-8 w-8 text-zinc-500" />
-                  <span className="text-sm font-medium text-zinc-400">
-                    Upload File
-                  </span>
+                <label className="px-3 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2 cursor-pointer">
+                  <Upload className="h-3.5 w-3.5" />
+                  Upload
                   <input
                     type="file"
                     accept="image/*"
@@ -536,52 +624,157 @@ export function Identity() {
           </div>
         </div>
 
-        {/* Info */}
-        <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-blue-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-blue-300 mb-1">
-                Verification Timeline
-              </p>
-              <p className="text-xs text-blue-200/70 leading-relaxed">
-                Your documents will be reviewed within{" "}
-                <strong>10-14 business days</strong>. Make sure all information
-                is clear and matches your official ID.
-              </p>
+        {/* Info & Submit */}
+        <div className="pt-4">
+          {/* Info */}
+          <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-blue-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-blue-300 mb-1">
+                  Verification Timeline
+                </p>
+                <p className="text-xs text-blue-200/50 leading-relaxed">
+                  Your documents will be reviewed within{" "}
+                  <strong>10-14 business days</strong>. Make sure all
+                  information is clear and matches your official ID.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Submit Button */}
-        <div className="flex gap-3 pt-4">
-          <Button
-            variant="outline"
-            onClick={() => router.push("/dashboard")}
-            className="flex-1"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={
-              isSubmitting ||
-              !fullName ||
-              !idNumber ||
-              !selfieFile ||
-              !idCardFile
-            }
-            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              "Submit for Verification"
-            )}
-          </Button>
+          {/* Submit Button */}
+          <div className="flex gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/dashboard")}
+              className="w-1/3 bg-transparent border-zinc-800 hover:bg-zinc-900"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              size="sm"
+              disabled={
+                isSubmitting ||
+                !fullName ||
+                !idNumber ||
+                !selfieFile ||
+                !idCardFile
+              }
+              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold shadow-lg shadow-blue-900/20"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit Verification"
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AccountlessSection() {
+  return (
+    <div className="mt-6 pt-6 border-t border-zinc-800">
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="text-xl font-bold text-white">
+              Accountless Identity
+            </h2>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+              </span>
+              <span className="text-xs font-medium text-purple-300">
+                ZK-Verified
+              </span>
+            </div>
+          </div>
+          <div className="flex gap-2 sm:flex-nowrap">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Rotate Keys
+            </Button>
+            <Button
+              size="sm"
+              className="flex-1 sm:flex-none bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 border-0 text-white"
+            >
+              <Fingerprint className="w-4 h-4 mr-2" />
+              New Proof
+            </Button>
+          </div>
+        </div>
+        <p className="text-sm text-zinc-400 max-w-2xl">
+          Manage your ephemeral sessions and zero-knowledge proofs without
+          exposing your real identity.
+        </p>
+      </div>
+
+      <div className="relative overflow-hidden pt-6 border-t border-zinc-800">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 sm:items-start">
+            <div className="relative shrink-0">
+              <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700/50 flex items-center justify-center shadow-xl">
+                <User className="h-8 w-8 text-zinc-400" />
+              </div>
+              <div className="absolute -bottom-2 -right-2 bg-green-500 h-7 w-7 rounded-full flex items-center justify-center border-4 border-zinc-950 shadow-lg">
+                <CheckCircle className="h-3.5 w-3.5 text-white stroke-[3]" />
+              </div>
+            </div>
+
+            <div className="flex-1 space-y-3">
+              <div>
+                <h3 className="text-lg font-bold text-white">
+                  You are Anonymous
+                </h3>
+                <p className="text-sm text-zinc-400 mt-1 leading-relaxed">
+                  This session is independent of your permanent on-chain
+                  identity. Your actions are cryptographically authorized via
+                  Zero-Knowledge Proofs.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <div className="px-3 py-1.5 rounded-md bg-zinc-900/80 border border-zinc-800 text-xs text-zinc-400 font-mono flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500/50" />
+                  dev@kredopay.app
+                </div>
+                <div className="px-3 py-1.5 rounded-md bg-zinc-900/80 border border-zinc-800 text-xs text-zinc-400 font-mono flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                  Expires in 3h 45m
+                </div>
+                <div className="px-3 py-1.5 rounded-md bg-zinc-900/80 border border-zinc-800 text-xs text-zinc-400 font-mono flex items-center gap-2">
+                  <Key className="w-3.5 h-3.5 text-zinc-500" />
+                  ID: dev...e7a9
+                </div>
+              </div>
+            </div>
+
+            <div className="sm:ml-auto">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-red-400 hover:text-red-300 hover:bg-red-500/10 w-full sm:w-auto"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
