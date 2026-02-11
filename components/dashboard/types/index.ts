@@ -25,6 +25,10 @@ export type TabName =
   | "intents"
   | "permissions"
   | "fog"
+  | "terminal"
   | "history"
   | "settings"
-  | "topups";
+  | "topups"
+  | "community"
+  | "agents"
+  | "staking";

@@ -9,6 +9,9 @@ import {
   TrendingUp,
   CardSimIcon,
   HistoryIcon,
+  Activity,
+  Bot,
+  Users,
 } from "lucide-react";
 import { TabName } from "../types";
 
@@ -33,9 +36,22 @@ export const MENU_ITEMS: MenuItem[] = [
     href: "/dashboard/identity",
   },
   {
+    icon: Bot,
+    label: "Agents",
+    id: "agents",
+    href: "/dashboard/agents",
+  },
+  {
     icon: TrendingUp,
     label: "Staking",
+    id: "staking",
     href: "/dashboard/staking",
+  },
+  {
+    icon: Users,
+    label: "Community",
+    id: "community",
+    href: "/dashboard/community",
   },
   {
     icon: Send,
@@ -54,6 +70,12 @@ export const MENU_ITEMS: MenuItem[] = [
     label: "Fog",
     id: "fog",
     href: "/dashboard/fog",
+  },
+  {
+    icon: Activity,
+    label: "Security Terminal",
+    id: "terminal",
+    href: "/dashboard/terminal",
   },
   {
     icon: History,
